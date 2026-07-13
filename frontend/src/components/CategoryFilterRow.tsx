@@ -1,0 +1,82 @@
+import React from "react";
+import { ScrollView, Pressable, Text, View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { Platform } from "react-native";
+import { useTheme } from "@/src/theme/theme";
+import { CATEGORIES } from "@/src/constants/categories";
+
+type Props = {
+  selected: string;
+  onSelect: (key: string) => void;
+};
+
+export default function CategoryFilterRow({ selected, onSelect }: Props) {
+  const { colors } = useTheme();
+
+  const chips = [
+    { key: "all", label: "All", icon: "sparkles", color: colors.brand },
+    ...CATEGORIES.map((c) => ({ key: c.key, label: c.label, icon: c.icon, color: colors[c.colorKey] })),
+  ];
+
+  return (
+    <View style={styles.wrap} testID="category-filter-row">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        {chips.map((c) => {
+          const active = selected === c.key;
+          return (
+            <Pressable
+              key={c.key}
+              testID={`filter-chip-${c.key}`}
+              onPress={() => {
+                if (Platform.OS !== "web") Haptics.selectionAsync();
+                onSelect(c.key);
+              }}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: active ? c.color : colors.surfaceSecondary,
+                  borderColor: active ? c.color : colors.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name={c.icon as any}
+                size={15}
+                color={active ? "#FFFFFF" : c.color}
+              />
+              <Text
+                style={[
+                  styles.chipText,
+                  { color: active ? "#FFFFFF" : colors.onSurface },
+                ]}
+              >
+                {c.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: { height: 56, justifyContent: "center" },
+  content: { paddingHorizontal: 16, gap: 8, alignItems: "center" },
+  chip: {
+    height: 36,
+    flexShrink: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  chipText: { fontSize: 13, fontWeight: "600" },
+});
