@@ -106,7 +106,7 @@ export default function AddEvent() {
                 return (
                   <Pressable
                     key={c.key}
-                    testID={`category-${c.key}`}
+                    testID={`category-chip-${c.key}`}
                     onPress={() => setCategory(c.key)}
                     style={[styles.catChip, { backgroundColor: active ? col : colors.surfaceTertiary, borderColor: active ? col : colors.border }]}
                   >
@@ -125,7 +125,7 @@ export default function AddEvent() {
                 return (
                   <Pressable
                     key={p.key}
-                    testID={`date-${p.key}`}
+                    testID={`date-preset-${p.key}`}
                     onPress={() => setDatePreset(p.key)}
                     style={[styles.catChip, { backgroundColor: active ? colors.brand : colors.surfaceTertiary, borderColor: active ? colors.brand : colors.border }]}
                   >
