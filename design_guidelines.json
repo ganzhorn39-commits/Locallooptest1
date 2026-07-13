@@ -1,0 +1,265 @@
+{
+  "app_name": "LocalLoop",
+  "personality": "1 iOS-Native Clean with structural hints from 7 Dark-First Utility for map controls",
+  "personality_one_liner": "A minimalist, high-contrast urban compass that frames live local events with precision, relying on sharp native typography and floating glass to let the map breathe.",
+  "color": {
+    "surface": {
+      "light": "#F9F9F8",
+      "dark": "#000000"
+    },
+    "onSurface": {
+      "light": "#111111",
+      "dark": "#F2F2F7"
+    },
+    "surfaceSecondary": {
+      "light": "#FFFFFF",
+      "dark": "#1C1C1E"
+    },
+    "onSurfaceSecondary": {
+      "light": "#1C1C1E",
+      "dark": "#E5E5EA"
+    },
+    "surfaceTertiary": {
+      "light": "#F0F0EE",
+      "dark": "#2C2C2E"
+    },
+    "onSurfaceTertiary": {
+      "light": "#4A4A4C",
+      "dark": "#AEAEB2"
+    },
+    "surfaceInverse": {
+      "light": "#111111",
+      "dark": "#FFFFFF"
+    },
+    "onSurfaceInverse": {
+      "light": "#FFFFFF",
+      "dark": "#111111"
+    },
+    "brand": {
+      "light": "#FF5A36",
+      "dark": "#FF5A36"
+    },
+    "brandPrimary": {
+      "light": "#FF5A36",
+      "dark": "#FF5A36"
+    },
+    "onBrandPrimary": {
+      "light": "#FFFFFF",
+      "dark": "#FFFFFF"
+    },
+    "brandSecondary": {
+      "light": "#FF8A70",
+      "dark": "#CC482B"
+    },
+    "onBrandSecondary": {
+      "light": "#111111",
+      "dark": "#F2F2F7"
+    },
+    "brandTertiary": {
+      "light": "#FFEDE9",
+      "dark": "#3A1B14"
+    },
+    "onBrandTertiary": {
+      "light": "#E03A16",
+      "dark": "#FF8A70"
+    },
+    "success": {
+      "light": "#24A143",
+      "dark": "#32D74B"
+    },
+    "onSuccess": {
+      "light": "#FFFFFF",
+      "dark": "#FFFFFF"
+    },
+    "warning": {
+      "light": "#E67A00",
+      "dark": "#FF9F0A"
+    },
+    "onWarning": {
+      "light": "#FFFFFF",
+      "dark": "#000000"
+    },
+    "error": {
+      "light": "#FF3B30",
+      "dark": "#FF453A"
+    },
+    "onError": {
+      "light": "#FFFFFF",
+      "dark": "#FFFFFF"
+    },
+    "info": {
+      "light": "#0062CC",
+      "dark": "#0A84FF"
+    },
+    "onInfo": {
+      "light": "#FFFFFF",
+      "dark": "#FFFFFF"
+    },
+    "border": {
+      "light": "#E5E5EA",
+      "dark": "#38383A"
+    },
+    "borderStrong": {
+      "light": "#C7C7CC",
+      "dark": "#48484A"
+    },
+    "divider": {
+      "light": "#E5E5EA",
+      "dark": "#38383A"
+    },
+    "pinNightlife": {
+      "light": "#AF52DE",
+      "dark": "#BF5AF2"
+    },
+    "pinFood": {
+      "light": "#FF9500",
+      "dark": "#FF9F0A"
+    },
+    "pinSports": {
+      "light": "#34C759",
+      "dark": "#32D74B"
+    },
+    "pinCulture": {
+      "light": "#007AFF",
+      "dark": "#0A84FF"
+    }
+  },
+  "typography": {
+    "displayFontFamily": "Space Grotesk",
+    "textFontFamily": "Geist",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous map-safe padding. Ensure bottom sheets and floating toolbars have hitSlop and avoid safe areas. Forms use md gaps, containers use lg/xl padding.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "stack_only",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use heavy glass with ≥70% surface/surfaceSecondary tint opacity behind floating search bars, map filter chips, and the top drag handle of the bottom sheet.",
+      "Use blur to ensure the map remains visually abstract behind UI panels without compromising text readability."
+    ],
+    "dont's": [
+      "Never blur body text regions or simple list items within the bottom sheet.",
+      "Do not rely solely on blur for readability; always include the tint layer."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "MapHome",
+      "purpose": "Full-screen interactive map showcasing color-coded event pins with live pulse indicators and clustering.",
+      "states": {
+        "loading": "Map rendering with skeleton pins and a central blur spinner.",
+        "empty": "No events nearby: Center map on location with an empty state illustration overlay and 'Host an Event' CTA.",
+        "error": "Failed to load map/events: Minimal floating toast/overlay with a retry button."
+      },
+      "layout": "Edge-to-edge MapView. Top safe area houses a floating glass search bar and a horizontally scrolling list of glass category filters (Nightlife, Food, etc.). FAB for 'Add Event' in the bottom right, respecting the bottom sheet's snap points. Pins use custom markers with the defined pin colors; active pins have a subtle pulsing animation indicating live check-ins."
+    },
+    {
+      "name": "EventDetailSheet",
+      "purpose": "Progressive disclosure bottom sheet that snaps to preview a tapped pin, expandable to full event details.",
+      "states": {
+        "loading": "Skeleton UI for title and image within the sheet.",
+        "empty": "N/A - Tap always yields data.",
+        "error": "Error message within the sheet bounds with 'Retry'."
+      },
+      "layout": "Uses @gorhom/bottom-sheet. At 25% snap point: Event title, time, distance, and live check-in count (using Space Grotesk for metrics). At 90% snap point: Expands to show a large hero image (with vertical gradient-to-dark scrim), full description, and a sticky bottom container holding full-width CTAs (Buy Tickets, Instagram, Website) wrapped in safe-area padding."
+    },
+    {
+      "name": "OrganizerDashboard",
+      "purpose": "A simple, clean form allowing users to add an event with location picking.",
+      "states": {
+        "loading": "Submit button shows inline spinner.",
+        "empty": "Clean blank form with Map Picker collapsed.",
+        "error": "Inline red validation messages below fields."
+      },
+      "layout": "Single-column scrollable form. Fields include Title, Date & Time, Description, Links. Features a miniature Map Picker block for location selection. Category is a segmented control or chip group using the 4 specific pin colors. Sticky 'Submit Event' CTA anchored at the bottom inside KeyboardAvoidingView."
+    },
+    {
+      "name": "LoginScreen",
+      "purpose": "Minimalist entry point emphasizing Google social login.",
+      "states": {
+        "loading": "Spinner on the login button.",
+        "empty": "Standard view.",
+        "error": "Toast or inline text showing auth failure."
+      },
+      "layout": "Centered logo or app wordmark. A single, large, high-contrast 'Continue with Google' button featuring the Google logo PNG, positioned in the lower thumb zone."
+    }
+  ],
+  "images": {
+    "google_logo": {
+      "url": "https://images.unsplash.com/photo-1662947190722-5d272f82a526?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxnb29nbGUlMjBsb2dvJTIwcG5nJTIwdHJhbnNwYXJlbnR8ZW58MHx8fHwxNzgzOTU1NDI3fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Google Logo"
+    },
+    "demo_nightlife": {
+      "url": "https://images.unsplash.com/photo-1630395822970-acd6a691d97e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxuaWdodGxpZmUlMjBjbHViJTIwcGFydHklMjBjcm93ZHxlbnwwfHx8fDE3ODM5NTU0Mjh8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Nightlife Party Crowd"
+    },
+    "demo_food_festival": {
+      "url": "https://images.unsplash.com/photo-1551883738-19ffa3dc4c43?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNDR8MHwxfHNlYXJjaHwxfHxmb29kJTIwZmVzdGl2YWwlMjBzdHJlZXQlMjBmb29kfGVufDB8fHx8MTc4Mzk1NTQyN3ww&ixlib=rb-4.1.0&q=85",
+      "alt": "Food Festival Street Food"
+    },
+    "demo_sports": {
+      "url": "https://images.unsplash.com/photo-1601564350184-9e93c13df688?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxvdXRkb29yJTIwc3BvcnRzJTIwbWVldHVwJTIwcGVvcGxlfGVufDB8fHx8MTc4Mzk1NTQyOHww&ixlib=rb-4.1.0&q=85",
+      "alt": "Outdoor Sports Meetup"
+    },
+    "demo_culture": {
+      "url": "https://images.unsplash.com/photo-1569783721854-33a99b4c0bae?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxjdWx0dXJhbCUyMGV2ZW50JTIwYXJ0JTIwZXhoaWJpdGlvbnxlbnwwfHx8fDE3ODM5NTU0Mjd8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Cultural Art Exhibition"
+    },
+    "live_pulse_texture": {
+      "url": "https://images.unsplash.com/photo-1604079628040-94301bb21b91?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGhlYXRtYXAlMjBncmFkaWVudCUyMHRleHR1cmV8ZW58MHx8fHwxNzgzOTU1NDI4fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Abstract Heatmap Gradient Texture"
+    }
+  },
+  "haptics": {
+    "map_pin_tap": "selection",
+    "bottom_sheet_snap": "light",
+    "cta_button_press": "medium",
+    "category_filter_select": "light",
+    "form_submit_success": "notification_success",
+    "form_submit_error": "notification_error"
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette provided: DO NOT use arbitrary blues or purples for the UI. Only the map pins themselves should use the specific pinNightlife, pinFood, pinSports, and pinCulture hexes as requested in the brief.",
+    "Implement @gorhom/bottom-sheet for the event preview. Ensure it uses progressive disclosure: summary details at the lower snap point, full hero image and CTA buttons at the expanded snap point.",
+    "Ensure map overlays (search bars, filter chips) use expo-blur to provide a glassy iOS-native feel over the map. The map is the visual hero.",
+    "The Organizer Dashboard should be a single continuous scroll view using KeyboardAvoidingView, featuring a sticky Submit CTA. Category selection should visually reflect the pin colors.",
+    "For the live heatmap / check-in feature, leverage Space Grotesk for metric typography and add a subtle Reanimated pulse effect on the active map markers.",
+    "Support dark and light mode toggle. The map style URL/JSON itself should dynamically switch to dark/light variants corresponding to the theme.",
+    "Whenever placing text over event demo images in the expanded bottom sheet, you MUST implement the mandatory vertical gradient-to-dark scrim (top to bottom) with a bottom stop opacity ≥70% surfaceInverse."
+  ]
+}
