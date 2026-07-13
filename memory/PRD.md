@@ -33,8 +33,19 @@ An interactive, map-first regional event & community app (Google Maps × Nomadli
 - ✅ Backend: events CRUD, check-in toggle + status, 8 seeded events, live jitter
 - ✅ Tested: backend 14/14 pytest passed; frontend critical flows passed via Playwright
 
+## Implemented — Feature Round 2 (2026-07-13)
+- ✅ Scrollable time-wheel (hour/minute/AM-PM) in Add Event form
+- ✅ Emoji map markers per category (🍹 🍕 🏋️ 🎭)
+- ✅ Event Group Chat (polling, unlocked on check-in) — `/chat/[eventId]`
+- ✅ User Profiles: photo upload, bio, Instagram — `/profile`
+- ✅ "Surprise Me" gamified button (popular event within ~2h, zooms + opens)
+- ✅ Map Stories/"Moments": photo upload, 24h TTL expiry, story viewer
+- ✅ "Create a Crew": private groups, invite codes, suggest map events + custom ideas, vote — `/crews`, `/crew/[id]`
+- ✅ Keyboard UX via react-native-keyboard-controller (chat + forms)
+- ✅ Tested: backend 28/28 pytest passed; frontend 12/12 feature areas passed via Playwright
+
 ## Backlog / Next
-- **P1**: Native marker clustering at low zoom (currently individual markers); saved/bookmarked events; "My events" list for organizers.
-- **P1**: Real date/time picker on native (currently preset chips).
-- **P2**: Search bar functionality, image upload for events (object storage), share event.
-- **P2**: Replace demo login before production (disable `ALLOW_DEV_LOGIN`).
+- **P1**: Native marker clustering at low zoom; date/time on native via spinner picker.
+- **P1**: Crew push/deep-link invites; "My events" for organizers.
+- **P2**: Search bar, video moments (object storage), unread chat badges.
+- **P2**: Disable `ALLOW_DEV_LOGIN` before production.
