@@ -49,6 +49,32 @@ export const api = {
     req(`/events/${id}/checkin`, { method: "POST" }),
   checkinStatus: (id: string): Promise<{ checked_in: boolean }> =>
     req(`/events/${id}/checkin-status`),
+  participants: (id: string): Promise<{ count: number; participants: any[] }> =>
+    req(`/events/${id}/participants`),
+
+  // Profile
+  updateProfile: (payload: any) => req(`/profile`, { method: "PATCH", body: JSON.stringify(payload) }),
+
+  // Chat
+  getMessages: (id: string): Promise<any[]> => req(`/events/${id}/messages`),
+  sendMessage: (id: string, text: string) =>
+    req(`/events/${id}/messages`, { method: "POST", body: JSON.stringify({ text }) }),
+
+  // Stories
+  getStories: (id: string): Promise<any[]> => req(`/events/${id}/stories`),
+  addStory: (id: string, image: string) =>
+    req(`/events/${id}/stories`, { method: "POST", body: JSON.stringify({ image }) }),
+
+  // Crews
+  createCrew: (name: string) => req(`/crews`, { method: "POST", body: JSON.stringify({ name }) }),
+  myCrews: (): Promise<any[]> => req(`/crews`),
+  getCrew: (id: string): Promise<any> => req(`/crews/${id}`),
+  joinCrew: (invite_code: string) => req(`/crews/join`, { method: "POST", body: JSON.stringify({ invite_code }) }),
+  addSuggestion: (crewId: string, payload: { event_id?: string; custom_text?: string }) =>
+    req(`/crews/${crewId}/suggestions`, { method: "POST", body: JSON.stringify(payload) }),
+  voteSuggestion: (crewId: string, sugId: string) =>
+    req(`/crews/${crewId}/suggestions/${sugId}/vote`, { method: "POST" }),
+
   createAuthSession: (session_id: string) =>
     req(`/auth/session`, { method: "POST", body: JSON.stringify({ session_id }) }),
   devSession: () => req(`/auth/dev-session`, { method: "POST" }),

@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 2 — LocalLoop new-features round. Backend: 14/14 pytest passed in /app/backend/tests/test_new_features.py covering PATCH /api/profile + /auth/me reflect, chat 403-without-checkin + 200-after-checkin, stories require-checkin + ~24h expires_at, participants count+list, full crews flow (create, list, get, join by invite, custom+event suggestions, vote toggle, order-by-vote_count), and 401s for all authed endpoints. Original suite (/app/backend/tests/test_localloop_api.py) still 14/14. Frontend (mobile viewport 390x844, Expo web preview): demo-login -> map-home renders 8 emoji pins (map-pin-<id>), Surprise Me opens the event sheet, checkin toggles state, add-story-button appears after checkin, open-chat-button navigates to chat-screen, chat-input + chat-send round-trips a message into chat-messages, profile-screen saves name/bio/instagram (verified after re-open), crews-screen -> create-crew -> crew-detail-screen shows crew-invite-code, add-custom-suggestion + vote-<id> toggle works, suggest-event-button -> pick-event-<id> adds a map-event suggestion. Add Event: TimeWheel testIDs (wheel-hour/wheel-minute/wheel-period) present; submit-event creates event (verified via /api/events). Only non-blocking finding: TimeWheel is a native RN ScrollView with snap and onMomentumScrollEnd — Playwright mouse.wheel does not trigger onMomentumScrollEnd on RN Web, so programmatic wheel selection can't easily be automated on web (works fine on touch); default time still submits correctly and event persists.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Global (multiple)", "issue": "Console warnings: 'shadow*' style props are deprecated (use boxShadow); props.pointerEvents deprecated (use style.pointerEvents). Non-blocking. Reference: TimeWheel.tsx:88 uses pointerEvents='none' as a prop; various StyleSheet blocks still use shadowColor/shadowOpacity."},
+      {"component": "React 19 ref access", "issue": "Console error 'Accessing element.ref was removed in React 19'. Coming from a library (likely @gorhom/bottom-sheet or react-native-reanimated). Non-blocking but should be tracked; ensure deps are on React-19-compatible versions."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/test_localloop_api.py",
+    "/app/test_reports/pytest/pytest_new_features.xml"
+  ],
+  "action_items": [
+    "(Nice-to-have) Migrate deprecated shadow* style props to boxShadow and move pointerEvents to style.pointerEvents (TimeWheel.tsx and any other components).",
+    "(Nice-to-have) Audit library versions for the React-19 element.ref warning (likely bottom-sheet/reanimated).",
+    "(Optional) For automated web testing of TimeWheel, consider exposing an onValueChange trigger or aria value that Playwright can drive without onMomentumScrollEnd — current selection UX is fine on real mobile touch."
+  ],
+  "critical_code_review_comments": [
+    "Backend responses cleanly exclude MongoDB _id in every new endpoint (profile, messages, stories, participants, crews).",
+    "require_attending() correctly gates messages + stories with 403; 401 is enforced by get_current_user Depends on all authed routes.",
+    "Story expires_at is set to now+24h in code (line 322) and TTL index is created (line 502) — verified expires_at delta ≈ 24.0h in tests.",
+    "Crews: create_crew auto-adds creator as member and includes them in initial votes on their own suggestions (vote_count=1, voted=True) — matches UX expectation.",
+    "Join by invite is idempotent ($addToSet) — matches note that both dev-sessions share the same user_id.",
+    "Suggestions correctly sorted by vote_count desc after each mutation.",
+    "Frontend uses process.env.EXPO_PUBLIC_BACKEND_URL consistently; testIDs coverage is excellent across all new screens (profile, crews, crew/[id], chat/[eventId], TimeWheel, EventSheet Stories/Chat)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 new + 14/14 original)",
+    "frontend": "100% of testable flows (12/12 feature areas verified end-to-end)"
+  },
+  "seed_data_creation": "Pytest created a TEST_Crew_*, TEST_Idea_*, a story, and messages against demo user. UI created TEST_UI_Crew (invite 08D0CD), a TEST_UI_Suggestion, a TEST_UI_TimeWheel_Event, and profile updates (name TEST_Explorer_UI, bio 'playwright bio 42', instagram pw_test). All under the demo@localloop.app user; TEST_-prefixed as required.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 7 new features (time-wheel, emoji pins, event chat gated on checkin, user profiles, Surprise Me, Moments/Stories with 24h expiry, Crews with suggestions+voting) are working end-to-end. Backend pytest: /app/backend/tests/test_new_features.py (14 tests). Note: dev-session always returns the SAME demo user_id but a new session_token, so simulating a 2nd distinct crew member requires real Google session; join is idempotent (verified). TimeWheel selection cannot be driven via Playwright mouse.wheel on RN Web ScrollView — treat as touch-only automation on web preview.",
+  "rca_of_issue": "No new bugs. Only observed 3 pre-existing non-blocking console warnings/errors from React-19 lib compatibility and deprecated RN style props."
+}

@@ -5,11 +5,12 @@ export const CATEGORIES: {
   label: string;
   colorKey: "pinNightlife" | "pinFood" | "pinSports" | "pinCulture";
   icon: string;
+  emoji: string;
 }[] = [
-  { key: "nightlife", label: "Nightlife", colorKey: "pinNightlife", icon: "moon" },
-  { key: "food", label: "Food", colorKey: "pinFood", icon: "restaurant" },
-  { key: "sports", label: "Sports", colorKey: "pinSports", icon: "basketball" },
-  { key: "culture", label: "Culture", colorKey: "pinCulture", icon: "color-palette" },
+  { key: "nightlife", label: "Nightlife", colorKey: "pinNightlife", icon: "moon", emoji: "🍹" },
+  { key: "food", label: "Food", colorKey: "pinFood", icon: "restaurant", emoji: "🍕" },
+  { key: "sports", label: "Sports", colorKey: "pinSports", icon: "basketball", emoji: "🏋️" },
+  { key: "culture", label: "Culture", colorKey: "pinCulture", icon: "color-palette", emoji: "🎭" },
 ];
 
 export const categoryColorKey = (cat: string) => {

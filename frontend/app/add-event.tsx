@@ -1,22 +1,24 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, Pressable, TextInput, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard,
+  View, Text, StyleSheet, Pressable, TextInput,
+  Platform, ActivityIndicator, Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useTheme } from "@/src/theme/theme";
 import { api } from "@/src/api/client";
 import { CATEGORIES, DEFAULT_REGION, CategoryKey } from "@/src/constants/categories";
 import LocationPicker from "@/src/components/LocationPicker";
+import TimeWheel from "@/src/components/TimeWheel";
 
-const DATE_PRESETS = [
-  { key: "tonight", label: "Tonight 8PM", get: () => { const d = new Date(); d.setHours(20, 0, 0, 0); return d; } },
-  { key: "tomorrow", label: "Tomorrow 7PM", get: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(19, 0, 0, 0); return d; } },
-  { key: "weekend", label: "Saturday 9PM", get: () => { const d = new Date(); const day = d.getDay(); const add = (6 - day + 7) % 7 || 6; d.setDate(d.getDate() + add); d.setHours(21, 0, 0, 0); return d; } },
-  { key: "nextweek", label: "Next week", get: () => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(18, 0, 0, 0); return d; } },
+const DAY_PRESETS = [
+  { key: "today", label: "Today", get: () => { const d = new Date(); return d; } },
+  { key: "tomorrow", label: "Tomorrow", get: () => { const d = new Date(); d.setDate(d.getDate() + 1); return d; } },
+  { key: "weekend", label: "Saturday", get: () => { const d = new Date(); const day = d.getDay(); const add = (6 - day + 7) % 7 || 6; d.setDate(d.getDate() + add); return d; } },
+  { key: "nextweek", label: "Next week", get: () => { const d = new Date(); d.setDate(d.getDate() + 7); return d; } },
 ];
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -33,7 +35,9 @@ export default function AddEvent() {
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<CategoryKey>("nightlife");
-  const [datePreset, setDatePreset] = useState("tonight");
+  const [datePreset, setDatePreset] = useState("today");
+  const [hour, setHour] = useState(20);
+  const [minute, setMinute] = useState(0);
   const [description, setDescription] = useState("");
   const [instagram, setInstagram] = useState("");
   const [website, setWebsite] = useState("");
@@ -49,11 +53,13 @@ export default function AddEvent() {
     setError("");
     setSubmitting(true);
     try {
-      const preset = DATE_PRESETS.find((p) => p.key === datePreset)!;
+      const preset = DAY_PRESETS.find((p) => p.key === datePreset)!;
+      const when = preset.get();
+      when.setHours(hour, minute, 0, 0);
       await api.createEvent({
         title: title.trim(),
         category,
-        start_time: preset.get().toISOString(),
+        start_time: when.toISOString(),
         description: description.trim(),
         image_url: CATEGORY_IMAGES[category],
         instagram: instagram.trim(),
@@ -86,9 +92,13 @@ export default function AddEvent() {
         <View style={{ width: 26 }} />
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-          <Field label="Event Title" colors={colors}>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={90}
+      >
+        <Field label="Event Title" colors={colors}>
             <TextInput
               testID="input-title"
               value={title} onChangeText={setTitle}
@@ -120,7 +130,7 @@ export default function AddEvent() {
 
           <Field label="Date & Time" colors={colors}>
             <View style={styles.catRow}>
-              {DATE_PRESETS.map((p) => {
+              {DAY_PRESETS.map((p) => {
                 const active = datePreset === p.key;
                 return (
                   <Pressable
@@ -134,6 +144,7 @@ export default function AddEvent() {
                 );
               })}
             </View>
+            <TimeWheel hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
           </Field>
 
           <Field label="Location" colors={colors}>
@@ -192,8 +203,9 @@ export default function AddEvent() {
           </Field>
 
           {!!error && <Text style={[styles.error, { color: colors.error }]} testID="form-error">{error}</Text>}
-        </ScrollView>
+      </KeyboardAwareScrollView>
 
+      <KeyboardStickyView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <Pressable
             testID="submit-event"
@@ -204,7 +216,7 @@ export default function AddEvent() {
             {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Publish Event</Text>}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardStickyView>
     </View>
   );
 }

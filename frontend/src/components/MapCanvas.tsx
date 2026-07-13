@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Easing, Platform } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/theme/theme";
 import { categoryMeta } from "@/src/constants/categories";
 import type { EventItem } from "@/src/api/client";
@@ -37,7 +36,7 @@ function Pin({ event, color, onPress }: { event: EventItem; color: string; onPre
         />
       )}
       <View style={[styles.pin, { backgroundColor: color }]}>
-        <Ionicons name={meta.icon as any} size={16} color="#FFFFFF" />
+        <Text style={styles.emoji}>{meta.emoji}</Text>
       </View>
       <View style={[styles.pinTip, { borderTopColor: color }]} />
     </View>
@@ -76,6 +75,7 @@ export default function MapCanvas({ events, region, onSelect, mapRef }: Props) {
 
 const styles = StyleSheet.create({
   pinWrap: { alignItems: "center", justifyContent: "center", width: 60, height: 60 },
+  emoji: { fontSize: 17 },
   pulse: { position: "absolute", width: 34, height: 34, borderRadius: 17, top: 5 },
   pin: {
     width: 34,

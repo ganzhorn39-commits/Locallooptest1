@@ -12,7 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.emergent.mapeventshub.ywobzy",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Show nearby events on your map"
+        "NSLocationWhenInUseUsageDescription": "Show nearby events on your map",
+        "NSCameraUsageDescription": "Take photos to share event moments",
+        "NSPhotoLibraryUsageDescription": "Choose photos for your profile and moments"
       }
     },
     "android": {
@@ -24,7 +26,8 @@
       "package": "com.emergent.mapeventshub.ywobzy",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
       ]
     },
     "web": {

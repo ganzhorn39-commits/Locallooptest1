@@ -225,6 +225,213 @@ async def checkin_status(event_id: str, user=Depends(get_current_user)):
     return {"checked_in": bool(already)}
 
 
+# ----------------------------- Profile -----------------------------
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    instagram: Optional[str] = None
+    picture: Optional[str] = None
+
+
+@api_router.patch("/profile")
+async def update_profile(payload: ProfileUpdate, user=Depends(get_current_user)):
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    if updates:
+        await db.users.update_one({"user_id": user["user_id"]}, {"$set": updates})
+    return await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+
+
+# ----------------------------- Attendance helpers -----------------------------
+async def require_attending(event_id: str, user: dict):
+    ev = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+    attending = await db.checkins.find_one({"event_id": event_id, "user_id": user["user_id"]})
+    if not attending:
+        raise HTTPException(status_code=403, detail="Check in to join this event")
+    return ev
+
+
+@api_router.get("/events/{event_id}/participants")
+async def participants(event_id: str):
+    docs = await db.checkins.find({"event_id": event_id}).to_list(500)
+    users = []
+    for d in docs:
+        u = await db.users.find_one({"user_id": d["user_id"]}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1})
+        if u:
+            users.append(u)
+    return {"count": len(users), "participants": users}
+
+
+# ----------------------------- Group Chat -----------------------------
+class MessageCreate(BaseModel):
+    text: str
+
+
+@api_router.get("/events/{event_id}/messages")
+async def get_messages(event_id: str, user=Depends(get_current_user)):
+    await require_attending(event_id, user)
+    docs = await db.messages.find({"event_id": event_id}, {"_id": 0}).sort("created_at", 1).to_list(500)
+    return docs
+
+
+@api_router.post("/events/{event_id}/messages")
+async def post_message(event_id: str, payload: MessageCreate, user=Depends(get_current_user)):
+    await require_attending(event_id, user)
+    text = payload.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty message")
+    msg = {
+        "id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["user_id"],
+        "user_name": user.get("name") or "Guest", "user_picture": user.get("picture") or "",
+        "text": text, "created_at": now_utc().isoformat(),
+    }
+    await db.messages.insert_one(dict(msg))
+    return msg
+
+
+# ----------------------------- Stories / Moments -----------------------------
+class StoryCreate(BaseModel):
+    image: str  # base64 data URI
+
+
+@api_router.get("/events/{event_id}/stories")
+async def get_stories(event_id: str):
+    now = now_utc()
+    docs = await db.stories.find({"event_id": event_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    active = []
+    for d in docs:
+        exp = d.get("expires_at")
+        if isinstance(exp, str):
+            exp = datetime.fromisoformat(exp)
+        if exp and exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if not exp or exp > now:
+            active.append(d)
+    return active
+
+
+@api_router.post("/events/{event_id}/stories")
+async def post_story(event_id: str, payload: StoryCreate, user=Depends(get_current_user)):
+    await require_attending(event_id, user)
+    story = {
+        "id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["user_id"],
+        "user_name": user.get("name") or "Guest", "user_picture": user.get("picture") or "",
+        "image": payload.image,
+        "created_at": now_utc().isoformat(),
+        "expires_at": now_utc() + timedelta(hours=24),
+    }
+    await db.stories.insert_one(dict(story))
+    story["expires_at"] = story["expires_at"].isoformat()
+    return story
+
+
+# ----------------------------- Crews -----------------------------
+class CrewCreate(BaseModel):
+    name: str
+
+
+class JoinCrew(BaseModel):
+    invite_code: str
+
+
+class SuggestionCreate(BaseModel):
+    event_id: Optional[str] = None
+    custom_text: Optional[str] = None
+
+
+async def crew_detail(crew: dict, user_id: str):
+    members = []
+    for uid in crew.get("member_ids", []):
+        u = await db.users.find_one({"user_id": uid}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1})
+        if u:
+            members.append(u)
+    sugs = await db.crew_suggestions.find({"crew_id": crew["id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    for s in sugs:
+        s["vote_count"] = len(s.get("votes", []))
+        s["voted"] = user_id in s.get("votes", [])
+    sugs.sort(key=lambda x: x["vote_count"], reverse=True)
+    return {**crew, "members": members, "suggestions": sugs}
+
+
+@api_router.post("/crews")
+async def create_crew(payload: CrewCreate, user=Depends(get_current_user)):
+    crew = {
+        "id": str(uuid.uuid4()), "name": payload.name.strip() or "My Crew",
+        "invite_code": uuid.uuid4().hex[:6].upper(),
+        "member_ids": [user["user_id"]], "created_by": user["user_id"],
+        "created_at": now_utc().isoformat(),
+    }
+    await db.crews.insert_one(dict(crew))
+    return await crew_detail(crew, user["user_id"])
+
+
+@api_router.get("/crews")
+async def my_crews(user=Depends(get_current_user)):
+    docs = await db.crews.find({"member_ids": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    for d in docs:
+        d["member_count"] = len(d.get("member_ids", []))
+    return docs
+
+
+@api_router.get("/crews/{crew_id}")
+async def get_crew(crew_id: str, user=Depends(get_current_user)):
+    crew = await db.crews.find_one({"id": crew_id}, {"_id": 0})
+    if not crew or user["user_id"] not in crew.get("member_ids", []):
+        raise HTTPException(status_code=404, detail="Crew not found")
+    return await crew_detail(crew, user["user_id"])
+
+
+@api_router.post("/crews/join")
+async def join_crew(payload: JoinCrew, user=Depends(get_current_user)):
+    crew = await db.crews.find_one({"invite_code": payload.invite_code.strip().upper()}, {"_id": 0})
+    if not crew:
+        raise HTTPException(status_code=404, detail="Invalid invite code")
+    if user["user_id"] not in crew.get("member_ids", []):
+        await db.crews.update_one({"id": crew["id"]}, {"$addToSet": {"member_ids": user["user_id"]}})
+        crew["member_ids"].append(user["user_id"])
+    return await crew_detail(crew, user["user_id"])
+
+
+@api_router.post("/crews/{crew_id}/suggestions")
+async def add_suggestion(crew_id: str, payload: SuggestionCreate, user=Depends(get_current_user)):
+    crew = await db.crews.find_one({"id": crew_id}, {"_id": 0})
+    if not crew or user["user_id"] not in crew.get("member_ids", []):
+        raise HTTPException(status_code=404, detail="Crew not found")
+    event_title = None
+    lat = lng = None
+    if payload.event_id:
+        ev = await db.events.find_one({"id": payload.event_id}, {"_id": 0})
+        if ev:
+            event_title = ev["title"]
+            lat, lng = ev["latitude"], ev["longitude"]
+    sug = {
+        "id": str(uuid.uuid4()), "crew_id": crew_id,
+        "event_id": payload.event_id, "event_title": event_title,
+        "latitude": lat, "longitude": lng,
+        "custom_text": (payload.custom_text or "").strip() or None,
+        "created_by": user["user_id"], "votes": [user["user_id"]],
+        "created_at": now_utc().isoformat(),
+    }
+    await db.crew_suggestions.insert_one(dict(sug))
+    return await crew_detail(crew, user["user_id"])
+
+
+@api_router.post("/crews/{crew_id}/suggestions/{sug_id}/vote")
+async def vote_suggestion(crew_id: str, sug_id: str, user=Depends(get_current_user)):
+    crew = await db.crews.find_one({"id": crew_id}, {"_id": 0})
+    if not crew or user["user_id"] not in crew.get("member_ids", []):
+        raise HTTPException(status_code=404, detail="Crew not found")
+    sug = await db.crew_suggestions.find_one({"id": sug_id}, {"_id": 0})
+    if not sug:
+        raise HTTPException(status_code=404, detail="Suggestion not found")
+    if user["user_id"] in sug.get("votes", []):
+        await db.crew_suggestions.update_one({"id": sug_id}, {"$pull": {"votes": user["user_id"]}})
+    else:
+        await db.crew_suggestions.update_one({"id": sug_id}, {"$addToSet": {"votes": user["user_id"]}})
+    return await crew_detail(crew, user["user_id"])
+
+
 # ----------------------------- Seed -----------------------------
 SEED_EVENTS = [
     {
@@ -292,11 +499,13 @@ async def seed_and_index():
     await db.users.create_index("user_id", unique=True)
     await db.user_sessions.create_index("session_token", unique=True)
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
+    await db.stories.create_index("expires_at", expireAfterSeconds=0)
+    await db.crews.create_index("invite_code")
     count = await db.events.count_documents({})
     if count == 0:
         base = now_utc()
         for i, e in enumerate(SEED_EVENTS):
-            ev = Event(**e, start_time=(base + timedelta(days=i, hours=3)).isoformat())
+            ev = Event(**e, start_time=(base + timedelta(minutes=30 + i * 80)).isoformat())
             await db.events.insert_one(ev.dict())
         logger.info("Seeded %d demo events", len(SEED_EVENTS))
 

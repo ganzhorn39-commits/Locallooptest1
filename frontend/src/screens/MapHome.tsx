@@ -7,6 +7,7 @@ import BottomSheet from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Location from "expo-location";
+import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
@@ -18,8 +19,7 @@ import EventSheet from "@/src/components/EventSheet";
 
 export default function MapHome() {
   const { colors, isDark, toggle } = useTheme();
-  const { user, logout } = useAuth();
-  const insets = useSafeAreaInsets();
+  const { user } = useAuth();  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -95,6 +95,25 @@ export default function MapHome() {
     }
   }, [selected]);
 
+  const surpriseMe = useCallback(() => {
+    if (!events.length) return;
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const now = Date.now();
+    const twoH = now + 2 * 3600 * 1000;
+    let pool = events.filter((e) => {
+      const t = new Date(e.start_time).getTime();
+      return t >= now - 30 * 60 * 1000 && t <= twoH;
+    });
+    if (!pool.length) pool = [...events];
+    pool.sort((a, b) => b.live_count - a.live_count);
+    const top = pool.slice(0, Math.min(5, pool.length));
+    const pick = top[Math.floor(Math.random() * top.length)];
+    const r = { latitude: pick.latitude, longitude: pick.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+    setRegion(r);
+    mapRef.current?.animateToRegion?.(r, 800);
+    onSelectPin(pick);
+  }, [events, onSelectPin]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="map-home">
       <MapCanvas events={events} region={region} onSelect={onSelectPin} mapRef={mapRef} />
@@ -110,11 +129,14 @@ export default function MapHome() {
             <Pressable testID="theme-toggle" onPress={toggle} style={[styles.iconBtn, { backgroundColor: colors.surfaceTertiary }]}>
               <Ionicons name={isDark ? "sunny" : "moon"} size={18} color={colors.onSurface} />
             </Pressable>
-            <Pressable testID="profile-logout" onPress={logout} style={[styles.iconBtn, { backgroundColor: colors.surfaceTertiary, overflow: "hidden" }]}>
+            <Pressable testID="crews-button" onPress={() => router.push("/crews")} style={[styles.iconBtn, { backgroundColor: colors.surfaceTertiary }]}>
+              <Ionicons name="people" size={18} color={colors.onSurface} />
+            </Pressable>
+            <Pressable testID="profile-button" onPress={() => router.push("/profile")} style={[styles.iconBtn, { backgroundColor: colors.surfaceTertiary, overflow: "hidden" }]}>
               {user?.picture ? (
                 <Image source={{ uri: user.picture }} style={{ width: 34, height: 34 }} />
               ) : (
-                <Ionicons name="log-out-outline" size={18} color={colors.onSurface} />
+                <Ionicons name="person" size={18} color={colors.onSurface} />
               )}
             </Pressable>
           </View>
@@ -132,6 +154,16 @@ export default function MapHome() {
           <Ionicons name="locate" size={22} color={colors.brand} />
         </Pressable>
       )}
+
+      {/* Surprise Me */}
+      <Pressable
+        testID="surprise-me-button"
+        onPress={surpriseMe}
+        style={[styles.surprise, { bottom: insets.bottom + 24, backgroundColor: colors.surfaceInverse }]}
+      >
+        <Text style={{ fontSize: 16 }}>🎲</Text>
+        <Text style={[styles.surpriseText, { color: colors.onSurfaceInverse }]}>Surprise Me</Text>
+      </Pressable>
 
       {/* FAB add event */}
       <Pressable
@@ -215,4 +247,20 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  surprise: {
+    position: "absolute",
+    left: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 48,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  surpriseText: { fontSize: 15, fontWeight: "800" },
 });

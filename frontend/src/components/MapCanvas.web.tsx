@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/src/theme/theme";
 import { categoryMeta, DEFAULT_REGION } from "@/src/constants/categories";
 import type { EventItem } from "@/src/api/client";
@@ -51,7 +50,7 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
           >
             {e.is_hot && <View style={[styles.pulse, { backgroundColor: color }]} />}
             <View style={[styles.pin, { backgroundColor: color }]}>
-              <Ionicons name={meta.icon as any} size={16} color="#FFFFFF" />
+              <Text style={styles.emoji}>{meta.emoji}</Text>
             </View>
           </Pressable>
         );
@@ -67,6 +66,7 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   pinWrap: { position: "absolute", alignItems: "center", justifyContent: "center", width: 40, height: 48 },
+  emoji: { fontSize: 17 },
   pulse: { position: "absolute", top: 2, width: 34, height: 34, borderRadius: 17, opacity: 0.35 },
   pin: {
     width: 34,
