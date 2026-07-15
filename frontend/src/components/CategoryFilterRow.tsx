@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import { useTheme } from "@/src/theme/theme";
 import { CATEGORIES } from "@/src/constants/categories";
+import { useI18n } from "@/src/i18n";
 
 type Props = {
   selected: string;
@@ -13,10 +14,11 @@ type Props = {
 
 export default function CategoryFilterRow({ selected, onSelect }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
 
   const chips = [
-    { key: "all", label: "All", icon: "sparkles", color: colors.brand },
-    ...CATEGORIES.map((c) => ({ key: c.key, label: c.label, icon: c.icon, color: colors[c.colorKey] })),
+    { key: "all", label: t("cat_all"), icon: "sparkles", color: colors.brand },
+    ...CATEGORIES.map((c) => ({ key: c.key, label: t(`cat_${c.key}`), icon: c.icon, color: colors[c.colorKey] })),
   ];
 
   return (

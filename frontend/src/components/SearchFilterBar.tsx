@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { QUICK_FILTERS, QuickKey } from "@/src/utils/filters";
+import { useI18n } from "@/src/i18n";
 
 export default function SearchFilterBar({
   query,
@@ -19,6 +20,7 @@ export default function SearchFilterBar({
   compact?: boolean;
 }) {
   const { colors } = useTheme();
+  const { t } = useI18n();
 
   return (
     <View style={{ gap: 8 }}>
@@ -28,7 +30,7 @@ export default function SearchFilterBar({
           testID="search-input"
           value={query}
           onChangeText={onQuery}
-          placeholder="Search events, categories, cities..."
+          placeholder={t("search_placeholder")}
           placeholderTextColor={colors.onSurfaceTertiary}
           style={[styles.searchInput, { color: colors.onSurface }]}
           returnKeyType="search"
@@ -51,7 +53,7 @@ export default function SearchFilterBar({
               style={[styles.pill, { backgroundColor: active ? colors.brand : colors.surfaceSecondary, borderColor: active ? colors.brand : colors.border }]}
             >
               <Ionicons name={f.icon as any} size={14} color={active ? "#FFFFFF" : colors.onSurface} />
-              <Text style={[styles.pillText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{f.label}</Text>
+              <Text style={[styles.pillText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{t(`quick_${f.key}`)}</Text>
             </Pressable>
           );
         })}

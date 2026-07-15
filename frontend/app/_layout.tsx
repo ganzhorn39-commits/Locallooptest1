@@ -12,6 +12,7 @@ import * as Linking from "expo-linking";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { ThemeProvider, useTheme } from "@/src/theme/theme";
 import { AuthProvider, useAuth } from "@/src/auth/AuthContext";
+import { I18nProvider } from "@/src/i18n";
 import { registerForPush } from "@/src/push";
 import SplashIntro from "@/src/components/SplashIntro";
 
@@ -106,9 +107,11 @@ export default function RootLayout() {
       <KeyboardProvider>
         <SafeAreaProvider>
           <ThemeProvider>
-            <AuthProvider>
-              <AuthGate />
-            </AuthProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <AuthGate />
+              </AuthProvider>
+            </I18nProvider>
           </ThemeProvider>
         </SafeAreaProvider>
       </KeyboardProvider>

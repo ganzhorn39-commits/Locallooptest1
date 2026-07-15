@@ -5,6 +5,7 @@ import BottomSheet from "@gorhom/bottom-sheet";
 import { useFocusEffect } from "expo-router";
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
 import EventCard from "@/src/components/EventCard";
@@ -77,7 +78,7 @@ export default function ExploreScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="explore-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.onSurface }]}>Explore</Text>
+        <Text style={[styles.title, { color: colors.onSurface }]}>{t("explore_title")}</Text>
         <SearchFilterBar query={query} onQuery={setQuery} quick={quick} onToggleQuick={toggleQuick} />
         <View style={{ marginHorizontal: -16, marginTop: 4 }}>
           <CategoryFilterRow selected={category} onSelect={setCategory} />
@@ -95,7 +96,7 @@ export default function ExploreScreen() {
           )}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 90 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.brand} />}
-          ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>No events match your filters.</Text>}
+          ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("no_match")}</Text>}
           testID="explore-list"
         />
       )}

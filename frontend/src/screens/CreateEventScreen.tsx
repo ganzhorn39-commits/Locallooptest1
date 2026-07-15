@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Calendar } from "react-native-calendars";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
+import { useI18n } from "@/src/i18n";
 import { api } from "@/src/api/client";
 import { CATEGORIES, DEFAULT_REGION, CategoryKey } from "@/src/constants/categories";
 import LocationPicker from "@/src/components/LocationPicker";
@@ -34,6 +35,7 @@ function fmtDate(iso: string) {
 
 export default function CreateEventScreen({ onDone, showClose }: { onDone: () => void; showClose?: boolean }) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -107,21 +109,21 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
       </View>
 
       <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled" bottomOffset={90}>
-        <Field label="Event Banner" colors={colors}>
+        <Field label={t("event_banner")} colors={colors}>
           <Pressable testID="pick-banner" onPress={pickBanner} style={[styles.banner, { borderColor: colors.border, backgroundColor: colors.surfaceTertiary }]}>
             {!!banner && <Image source={{ uri: banner }} style={StyleSheet.absoluteFill} contentFit="cover" />}
             <View style={[styles.bannerOverlay, banner ? { backgroundColor: "rgba(0,0,0,0.35)" } : null]}>
               <Ionicons name="image" size={22} color={banner ? "#FFFFFF" : colors.brand} />
-              <Text style={[styles.bannerText, { color: banner ? "#FFFFFF" : colors.onSurface }]}>{banner ? "Change banner" : "Upload banner image"}</Text>
+              <Text style={[styles.bannerText, { color: banner ? "#FFFFFF" : colors.onSurface }]}>{banner ? t("change_banner") : t("upload_banner")}</Text>
             </View>
           </Pressable>
         </Field>
 
-        <Field label="Event Title" colors={colors}>
+        <Field label={t("event_title")} colors={colors}>
           <TextInput testID="input-title" value={title} onChangeText={setTitle} placeholder="e.g. Rooftop Summer Party" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
-        <Field label="Category" colors={colors}>
+        <Field label={t("category")} colors={colors}>
           <View style={styles.catRow}>
             {CATEGORIES.map((c) => {
               const active = category === c.key; const col = colors[c.colorKey];
@@ -136,7 +138,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
           </View>
         </Field>
 
-        <Field label="Date" colors={colors}>
+        <Field label={t("date")} colors={colors}>
           <Pressable testID="open-calendar" onPress={() => setShowCal(true)} style={[styles.dateBtn, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
             <Ionicons name="calendar" size={18} color={colors.brand} />
             <Text style={[styles.dateText, { color: colors.onSurface }]}>{fmtDate(dateISO)}</Text>
@@ -144,13 +146,13 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
           </Pressable>
         </Field>
 
-        <Field label="Time" colors={colors}>
+        <Field label={t("time")} colors={colors}>
           <TimeWheel hour={hour} minute={minute} onChange={(h, m) => { setHour(h); setMinute(m); }} />
         </Field>
 
-        <Field label="Recurring Event?" colors={colors}>
+        <Field label={t("recurring_q")} colors={colors}>
           <View style={[styles.recurRow, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
-            <Text style={{ color: colors.onSurface, fontSize: 14, flex: 1, fontWeight: "600" }}>Repeat this event · Wiederkehrend?</Text>
+            <Text style={{ color: colors.onSurface, fontSize: 14, flex: 1, fontWeight: "600" }}>{t("repeat_this")}</Text>
             <Switch testID="recurring-toggle" value={isRecurring} onValueChange={setIsRecurring} trackColor={{ true: colors.brand, false: colors.borderStrong }} />
           </View>
           {isRecurring && (
@@ -161,7 +163,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
                   return (
                     <Pressable key={f.key} testID={`freq-${f.key}`} onPress={() => setFreq(f.key)}
                       style={[styles.catChip, { backgroundColor: active ? colors.brand : colors.surfaceTertiary, borderColor: active ? colors.brand : colors.border }]}>
-                      <Text style={[styles.catChipText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{f.label}</Text>
+                      <Text style={[styles.catChipText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{t(`freq_${f.key}`)}</Text>
                     </Pressable>
                   );
                 })}

@@ -7,11 +7,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
+import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { categoryMeta } from "@/src/constants/categories";
 
 export default function ChatsScreen() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -86,14 +88,14 @@ export default function ChatsScreen() {
           })
         )}
 
-        <Text style={[styles.section, { color: colors.onSurfaceTertiary, marginTop: 8 }]}>Your Crews</Text>
+        <Text style={[styles.section, { color: colors.onSurfaceTertiary, marginTop: 8 }]}>{t("your_crews")}</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
           <View style={styles.inline}>
-            <TextInput testID="input-crew-name" value={newName} onChangeText={setNewName} placeholder="New crew name" placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
+            <TextInput testID="input-crew-name" value={newName} onChangeText={setNewName} placeholder={t("new_crew_ph")} placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
             <Pressable testID="create-crew" onPress={create} disabled={busy} style={[styles.smallBtn, { backgroundColor: colors.brand }]}><Ionicons name="add" size={22} color="#FFFFFF" /></Pressable>
           </View>
           <View style={styles.inline}>
-            <TextInput testID="input-join-code" value={joinCode} onChangeText={setJoinCode} placeholder="Join with INVITE CODE" autoCapitalize="characters" placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
+            <TextInput testID="input-join-code" value={joinCode} onChangeText={setJoinCode} placeholder={t("join_code_ph")} autoCapitalize="characters" placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
             <Pressable testID="join-crew" onPress={join} disabled={busy} style={[styles.smallBtn, { backgroundColor: colors.surfaceInverse }]}><Ionicons name="enter" size={20} color={colors.onSurfaceInverse} /></Pressable>
           </View>
           {!!error && <Text style={{ color: colors.error, fontWeight: "600" }} testID="crews-error">{error}</Text>}

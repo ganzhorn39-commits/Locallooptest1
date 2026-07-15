@@ -8,6 +8,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/src/theme/theme";
+import { useI18n } from "@/src/i18n";
 import { categoryMeta } from "@/src/constants/categories";
 import { api, EventItem } from "@/src/api/client";
 import { pickImage } from "@/src/utils/pickImage";
@@ -37,6 +38,7 @@ const openLink = async (url: string) => {
 
 export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }: Props) {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const meta = categoryMeta(event.category);
   const catColor = colors[meta.colorKey];
@@ -136,9 +138,9 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
         <View style={[styles.liveCard, { backgroundColor: colors.brandTertiary }]}>
           <View style={styles.liveDot} />
           <Text style={[styles.liveCount, { color: colors.onBrandTertiary }]} testID="event-live-count">{event.live_count}</Text>
-          <Text style={[styles.liveLabel, { color: colors.onBrandTertiary }]}>heading here now</Text>
+          <Text style={[styles.liveLabel, { color: colors.onBrandTertiary }]}>{t("heading_now")}</Text>
           {participants > 0 && (
-            <Text style={[styles.liveLabel, { color: colors.onBrandTertiary, marginLeft: "auto" }]}>{participants} checked in</Text>
+            <Text style={[styles.liveLabel, { color: colors.onBrandTertiary, marginLeft: "auto" }]}>{participants} {t("checked_in")}</Text>
           )}
         </View>
 
@@ -149,14 +151,14 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
         >
           <Ionicons name={checkedIn ? "checkmark-circle" : "add-circle-outline"} size={20} color={checkedIn ? "#FFFFFF" : colors.onSurface} />
           <Text style={[styles.checkinText, { color: checkedIn ? "#FFFFFF" : colors.onSurface }]}>
-            {checkedIn ? "You're going!" : "I'm going / Check in"}
+            {checkedIn ? t("going") : t("checkin_cta")}
           </Text>
         </Pressable>
 
         {/* Attendees */}
         {attendeeList.length > 0 && (
           <View testID="attendees-section">
-            <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>Attendees · {participants}</Text>
+            <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>{t("attendees")} · {participants}</Text>
             <View style={styles.attendeeRow}>
               {attendeeList.slice(0, 8).map((a) => (
                 <View key={a.user_id} style={styles.attendee}>
@@ -176,7 +178,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
 
         {/* Stories / Moments */}
         <View style={styles.storiesHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>Moments · disappear in 24h</Text>
+          <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>{t("moments")}</Text>
         </View>
         <View style={styles.storiesRow}>
           {checkedIn && (
@@ -194,10 +196,10 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
             </Pressable>
           ))}
           {stories.length === 0 && !checkedIn && (
-            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>Check in to share a moment</Text>
+            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("checkin_to_share")}</Text>
           )}
           {stories.length === 0 && checkedIn && (
-            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>Be the first to post a moment</Text>
+            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("first_moment")}</Text>
           )}
         </View>
 
@@ -212,7 +214,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
         >
           <Ionicons name="chatbubbles" size={20} color={catColor} />
           <Text style={[styles.chatText, { color: colors.onSurface }]}>
-            {checkedIn ? "Open Group Chat" : "Check in to unlock group chat"}
+            {checkedIn ? t("open_chat") : t("unlock_chat")}
           </Text>
           {checkedIn && <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} style={{ marginLeft: "auto" }} />}
         </Pressable>
@@ -223,7 +225,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
           {!!event.tickets_url && (
             <Pressable testID="cta-tickets" onPress={() => openLink(event.tickets_url)} style={[styles.ctaPrimary, { backgroundColor: colors.brand }]}>
               <Ionicons name="ticket-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.ctaPrimaryText}>Buy Tickets</Text>
+              <Text style={styles.ctaPrimaryText}>{t("buy_tickets")}</Text>
             </Pressable>
           )}
           <View style={styles.ctaRow}>

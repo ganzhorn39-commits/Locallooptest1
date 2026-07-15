@@ -8,12 +8,14 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useI18n } from "@/src/i18n";
 import { api } from "@/src/api/client";
 import { pickImage } from "@/src/utils/pickImage";
 
 export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
-  const { colors, isDark, toggle } = useTheme();
-  const { user, logout, refresh } = useAuth();
+  const { colors } = useTheme();
+  const { user, refresh } = useAuth();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -47,9 +49,9 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
         {showBack ? (
           <Pressable testID="profile-back" onPress={() => router.back()} style={{ width: 26 }}><Ionicons name="chevron-back" size={26} color={colors.onSurface} /></Pressable>
         ) : <View style={{ width: 26 }} />}
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>My Profile</Text>
-        <Pressable testID="theme-toggle" onPress={toggle} style={{ width: 26 }}>
-          <Ionicons name={isDark ? "sunny" : "moon"} size={22} color={colors.onSurface} />
+        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{t("my_profile")}</Text>
+        <Pressable testID="open-settings" onPress={() => router.push("/settings")} style={{ width: 26 }}>
+          <Ionicons name="settings-outline" size={24} color={colors.onSurface} />
         </Pressable>
       </View>
 
@@ -62,22 +64,17 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
           <Text style={[styles.email, { color: colors.onSurfaceTertiary }]}>{user?.email}</Text>
         </View>
 
-        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>Display Name</Text>
-        <TextInput testID="input-name" value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
+        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("display_name")}</Text>
+        <TextInput testID="input-name" value={name} onChangeText={setName} placeholder={t("display_name")} placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
 
-        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>Bio</Text>
-        <TextInput testID="input-bio" value={bio} onChangeText={setBio} placeholder="Tell people what you're into" placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 90, textAlignVertical: "top", paddingTop: 12 }]} />
+        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("bio")}</Text>
+        <TextInput testID="input-bio" value={bio} onChangeText={setBio} placeholder={t("bio")} placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 90, textAlignVertical: "top", paddingTop: 12 }]} />
 
-        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>Instagram</Text>
+        <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("instagram")}</Text>
         <TextInput testID="input-instagram" value={instagram} onChangeText={setInstagram} placeholder="@yourhandle" autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
 
         <Pressable testID="save-profile" onPress={save} disabled={saving} style={[styles.save, { backgroundColor: colors.brand, opacity: saving ? 0.7 : 1 }]}>
-          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>{saved ? "Saved ✓" : "Save Profile"}</Text>}
-        </Pressable>
-
-        <Pressable testID="logout-button" onPress={async () => { await logout(); router.replace("/login"); }} style={[styles.logout, { borderColor: colors.border }]}>
-          <Ionicons name="log-out-outline" size={20} color={colors.error} />
-          <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
+          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>{saved ? t("saved") : t("save_profile")}</Text>}
         </Pressable>
       </KeyboardAwareScrollView>
     </View>

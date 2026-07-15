@@ -4,9 +4,11 @@ import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useTheme } from "@/src/theme/theme";
+import { useI18n } from "@/src/i18n";
 
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tabs
@@ -29,26 +31,11 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{ title: "Map", tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{ title: "Explore", tabBarIcon: ({ color, size }) => <Ionicons name="compass" size={size} color={color} /> }}
-      />
-      <Tabs.Screen
-        name="create"
-        options={{ title: "Create", tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size + 6} color={color} /> }}
-      />
-      <Tabs.Screen
-        name="chats"
-        options={{ title: "Chats", tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} /> }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{ title: "Profile", tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }}
-      />
+      <Tabs.Screen name="index" options={{ title: t("tab_map"), tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }} />
+      <Tabs.Screen name="explore" options={{ title: t("tab_explore"), tabBarIcon: ({ color, size }) => <Ionicons name="compass" size={size} color={color} /> }} />
+      <Tabs.Screen name="create" options={{ title: t("tab_create"), tabBarIcon: ({ color, size }) => <Ionicons name="add-circle" size={size + 6} color={color} /> }} />
+      <Tabs.Screen name="chats" options={{ title: t("tab_chats"), tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles" size={size} color={color} /> }} />
+      <Tabs.Screen name="profile" options={{ title: t("tab_profile"), tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }} />
     </Tabs>
   );
 }
