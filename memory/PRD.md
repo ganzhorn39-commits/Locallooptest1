@@ -44,8 +44,22 @@ An interactive, map-first regional event & community app (Google Maps × Nomadli
 - ✅ Keyboard UX via react-native-keyboard-controller (chat + forms)
 - ✅ Tested: backend 28/28 pytest passed; frontend 12/12 feature areas passed via Playwright
 
-## Backlog / Next
-- **P1**: Native marker clustering at low zoom; date/time on native via spinner picker.
-- **P1**: Crew push/deep-link invites; "My events" for organizers.
-- **P2**: Search bar, video moments (object storage), unread chat badges.
-- **P2**: Disable `ALLOW_DEV_LOGIN` before production.
+## Implemented — Feature Round 3: Final Build (2026-07-15)
+- ✅ 5-tab bottom navigation: Map · Explore · Create · Chats · Profile
+- ✅ Redesigned Welcome screen: blurred city bg + pulsating neon indigo/cyan gradient, white logo + DE/EN slogan, Google/Facebook/Email CTA stack, DE/EN toggle + "Business Login" bottom bar
+- ✅ Karlsruhe default map center + GPS centering; location picker defaults to Karlsruhe
+- ✅ Seeded 7 REAL Karlsruhe venues as verified business events (DECKZEHN, VENUS BAR, Mama's Café, drei&zwanzig, Wilma Wunder, Bistro Le Renard, Café Wohnzimmer), each with 3–6 mock attendees + seed chat messages
+- ✅ Recurring events: toggle + freq + weekday selector; next-occurrence computed; recurring badge on sheet/cards (DECKZEHN Thu&Sat 18:00, VENUS BAR Fri 20:00)
+- ✅ Explore tab: vertical rich cards + search + quick filters (Today/Free/Outdoor/Near Me)
+- ✅ Event Save/Bookmark (+ /my/saved, /my/attending); Attendee avatars + first names on sheet
+- ✅ Event banner image upload; interactive calendar date picker + scrollable time wheel
+- ✅ Marker clustering + emoji markers with neon glow; chat keyboard back-button fix
+- ✅ Push-notification relay wired (Emergent) — saved-event + new-message triggers
+- ✅ Tested: backend 16/16 pytest; frontend ~all flows passed (save button + recurring badge fixed & verified)
+
+## Backlog / Next (deferred — need integrations / larger scope)
+- **P0**: Facebook OAuth login (needs Facebook integration); Email OTP login (needs email provider e.g. Resend/SendGrid)
+- **P0**: Business vs Regular account-type split + "Create Your Profile" forced onboarding + business-only Create access (backend `account_type` field already seeded)
+- **P1**: Full DE/EN i18n across all screens (currently on Welcome only)
+- **P1**: Push delivery verification (requires google-services.json + native build); scheduled "starts in 2h" reminder via a server scheduler
+- **P2**: Viewport-only pin rendering; short video Moments (object storage)

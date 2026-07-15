@@ -91,15 +91,26 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
         )}
         <LinearGradient colors={["transparent", "rgba(0,0,0,0.85)"]} style={StyleSheet.absoluteFill} />
         <View style={styles.heroContent}>
-          <View style={[styles.catBadge, { backgroundColor: catColor }]}>
-            <Text style={{ fontSize: 13 }}>{event.emoji || meta.emoji}</Text>
-            <Text style={styles.catBadgeText}>{meta.label}</Text>
+          <View style={styles.badgeRow}>
+            <View style={[styles.catBadge, { backgroundColor: catColor }]}>
+              <Text style={{ fontSize: 13 }}>{event.emoji || meta.emoji}</Text>
+              <Text style={styles.catBadgeText}>{meta.label}</Text>
+            </View>
+            {event.is_recurring && !!event.recurrence_label && (
+              <View style={styles.recurringBadge} testID="recurring-badge">
+                <Ionicons name="repeat" size={12} color="#FFFFFF" />
+                <Text style={styles.recurringText}>{event.recurrence_label}</Text>
+              </View>
+            )}
           </View>
           {!!event.venue_name && (
             <Text style={styles.venueName}>{event.verified ? "✓ " : ""}{event.venue_name}</Text>
           )}
           <Text style={styles.heroTitle} testID="event-sheet-title">{event.title}</Text>
         </View>
+        <Pressable testID="save-event-button" onPress={toggleSave} style={styles.saveHero}>
+          <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color="#FFFFFF" />
+        </Pressable>
       </View>
 
       <View style={styles.body}>
@@ -253,6 +264,9 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
 const styles = StyleSheet.create({
   hero: { height: 220, justifyContent: "flex-end" },
   heroContent: { padding: 16, gap: 8 },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  recurringBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  recurringText: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
   catBadge: { flexDirection: "row", alignItems: "center", gap: 5, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
   catBadgeText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   heroTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800", letterSpacing: -0.5 },
