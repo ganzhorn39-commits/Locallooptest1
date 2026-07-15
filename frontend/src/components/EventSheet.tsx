@@ -11,6 +11,7 @@ import { useTheme } from "@/src/theme/theme";
 import { categoryMeta } from "@/src/constants/categories";
 import { api, EventItem } from "@/src/api/client";
 import { pickImage } from "@/src/utils/pickImage";
+import { countdown } from "@/src/utils/filters";
 
 type Props = {
   event: EventItem;
@@ -42,16 +43,28 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
 
   const [stories, setStories] = useState<any[]>([]);
   const [participants, setParticipants] = useState(0);
+  const [attendeeList, setAttendeeList] = useState<any[]>([]);
   const [viewing, setViewing] = useState<any | null>(null);
   const [posting, setPosting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const loadSocial = useCallback(async () => {
     try {
       const [st, pt] = await Promise.all([api.getStories(event.id), api.participants(event.id)]);
       setStories(st);
       setParticipants(pt.count);
+      setAttendeeList(pt.participants || []);
+    } catch {}
+    try {
+      setSaved((await api.saveStatus(event.id)).saved);
     } catch {}
   }, [event.id]);
+
+  const toggleSave = async () => {
+    setSaved((s) => !s);
+    if (Platform.OS !== "web") Haptics.selectionAsync();
+    try { await api.toggleSave(event.id); } catch { loadSocial(); }
+  };
 
   useEffect(() => { loadSocial(); }, [loadSocial, checkedIn]);
 
@@ -79,9 +92,12 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
         <LinearGradient colors={["transparent", "rgba(0,0,0,0.85)"]} style={StyleSheet.absoluteFill} />
         <View style={styles.heroContent}>
           <View style={[styles.catBadge, { backgroundColor: catColor }]}>
-            <Text style={{ fontSize: 13 }}>{meta.emoji}</Text>
+            <Text style={{ fontSize: 13 }}>{event.emoji || meta.emoji}</Text>
             <Text style={styles.catBadgeText}>{meta.label}</Text>
           </View>
+          {!!event.venue_name && (
+            <Text style={styles.venueName}>{event.verified ? "✓ " : ""}{event.venue_name}</Text>
+          )}
           <Text style={styles.heroTitle} testID="event-sheet-title">{event.title}</Text>
         </View>
       </View>
@@ -89,8 +105,14 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
       <View style={styles.body}>
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
-            <Ionicons name="calendar-outline" size={16} color={colors.onSurfaceTertiary} />
-            <Text style={[styles.metaText, { color: colors.onSurface }]}>{formatDate(event.start_time)}</Text>
+            <Ionicons name={event.is_recurring ? "repeat" : "calendar-outline"} size={16} color={colors.onSurfaceTertiary} />
+            <Text style={[styles.metaText, { color: colors.onSurface }]}>
+              {event.is_recurring && event.recurrence_label ? event.recurrence_label : formatDate(event.next_occurrence || event.start_time)}
+            </Text>
+          </View>
+          <View style={[styles.countdownChip, { backgroundColor: colors.brandTertiary, marginLeft: "auto" }]}>
+            <Ionicons name="time" size={13} color={colors.onBrandTertiary} />
+            <Text style={[styles.countdownText, { color: colors.onBrandTertiary }]} testID="event-countdown">{countdown(event.next_occurrence || event.start_time)}</Text>
           </View>
         </View>
         <View style={styles.metaRow}>
@@ -119,6 +141,27 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
             {checkedIn ? "You're going!" : "I'm going / Check in"}
           </Text>
         </Pressable>
+
+        {/* Attendees */}
+        {attendeeList.length > 0 && (
+          <View testID="attendees-section">
+            <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>Attendees · {participants}</Text>
+            <View style={styles.attendeeRow}>
+              {attendeeList.slice(0, 8).map((a) => (
+                <View key={a.user_id} style={styles.attendee}>
+                  <View style={[styles.attendeeAvatar, { backgroundColor: colors.surfaceTertiary, borderColor: catColor }]}>
+                    {a.picture ? (
+                      <Image source={{ uri: a.picture }} style={styles.attendeeImg} contentFit="cover" />
+                    ) : (
+                      <Text style={[styles.attendeeInitial, { color: colors.onSurface }]}>{(a.name || "?").charAt(0).toUpperCase()}</Text>
+                    )}
+                  </View>
+                  <Text style={[styles.attendeeName, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>{(a.name || "Guest").split(" ")[0]}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Stories / Moments */}
         <View style={styles.storiesHeader}>
@@ -214,15 +257,25 @@ const styles = StyleSheet.create({
   catBadgeText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   heroTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800", letterSpacing: -0.5 },
   body: { padding: 16, gap: 14 },
-  metaRow: { flexDirection: "row" },
+  metaRow: { flexDirection: "row", alignItems: "center" },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 8 },
   metaText: { fontSize: 14, fontWeight: "500" },
+  countdownChip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  countdownText: { fontSize: 13, fontWeight: "800" },
+  saveHero: { position: "absolute", top: 14, right: 14, width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
   liveCard: { flexDirection: "row", alignItems: "center", gap: 8, padding: 14, borderRadius: 12 },
   liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#FF3B30" },
   liveCount: { fontSize: 22, fontWeight: "800" },
   liveLabel: { fontSize: 14, fontWeight: "600" },
   checkinBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 12, borderWidth: 1 },
   checkinText: { fontSize: 15, fontWeight: "700" },
+  venueName: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: "600" },
+  attendeeRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 8 },
+  attendee: { alignItems: "center", width: 52, gap: 4 },
+  attendeeAvatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  attendeeImg: { width: "100%", height: "100%" },
+  attendeeInitial: { fontSize: 16, fontWeight: "800" },
+  attendeeName: { fontSize: 11, textAlign: "center" },
   storiesHeader: { marginTop: 2 },
   sectionLabel: { fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   storiesRow: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },

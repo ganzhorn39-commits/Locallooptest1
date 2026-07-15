@@ -22,8 +22,8 @@ export const categoryMeta = (cat: string) =>
   CATEGORIES.find((c) => c.key === cat) || CATEGORIES[0];
 
 export const DEFAULT_REGION = {
-  latitude: 37.7749,
-  longitude: -122.4194,
-  latitudeDelta: 0.09,
-  longitudeDelta: 0.09,
+  latitude: 49.0089,
+  longitude: 8.4069,
+  latitudeDelta: 0.05,
+  longitudeDelta: 0.05,
 };

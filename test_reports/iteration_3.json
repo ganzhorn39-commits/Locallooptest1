@@ -1,0 +1,45 @@
+{
+  "summary": "Iteration 3 (LocalLoop final build). Backend: 16/16 new tests PASSED in /app/backend/tests/test_iteration3.py — 7 Karlsruhe venues seeded with venue_name/verified=true/emoji/is_recurring/address, DECKZEHN next_occurrence lands on Thu OR Sat at 18:00, VENUS BAR on Fri at 20:00, each event has 3–6 checkins and matching participants list (name+user_id), pre-seeded messages returned after dev-session+checkin, saves flow (POST /api/events/{id}/save toggles, GET /api/my/saved lists, GET /api/events/{id}/save-status, GET /api/my/attending), 401 without token on all authed endpoints, POST /api/events accepts and persists banner_url/emoji/is_recurring/recurrence_freq/recurrence_days/recurrence_label, POST /api/register-push returns 201 with placeholder relay. Frontend (mobile 390x844): Welcome shows login-screen/google/facebook/email/language-toggle/business-login/demo-login-button; facebook & email show login-note; language-toggle switches slogan text; 5-tab nav all reachable and each tab renders its screen testID (map-home, explore-screen, create-event-screen, chats-screen, profile-screen); Map: 8 emoji map-pin-<id>, search-input, 8 quick-* pills, surprise-me-button opens event sheet; Explore: 8 event-card-<id> + 8 save-card-<id>; Create: pick-banner, open-calendar, submit-event, 4 category-chip-*, recurring-toggle reveals 3 freq-* + 7 day-*; Chats: 3 chat-item-<id> for attending events + create-crew + join-crew present; Profile: name/bio/instagram inputs + save-profile + theme-toggle + logout-button OK; checkin-button toggles and open-chat-button appears afterward on event sheet. Deprecated packages detected: none. Two testIDs specified in the review are MISSING on EventSheet: save-event-button (state hooks exist, JSX not rendered) and recurring-badge (recurrence label is rendered as inline meta text but lacks the testID).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "EventSheet", "issue": "save-event-button is NOT rendered. `saved` state + `toggleSave()` + `styles.saveHero` exist (lines 49, 63-67, 265) but no <Pressable testID=\"save-event-button\"> is present in JSX. Feature spec says the event sheet must have a save toggle. Reference: /app/frontend/src/components/EventSheet.tsx (missing render around lines 86-103 hero overlay).", "testID": "save-event-button", "priority": "HIGH"},
+      {"component": "EventSheet", "issue": "recurring-badge testID missing. The recurrence_label is currently shown as inline metaText only (line 110). Spec asks for a distinct recurring badge with testID=\"recurring-badge\". Reference: /app/frontend/src/components/EventSheet.tsx:108-111.", "testID": "recurring-badge", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Global (StyleSheet)", "issue": "Console warning: 'shadow*' style props are deprecated. Use 'boxShadow'. Non-blocking. Reference: multiple StyleSheet blocks in /app/frontend/src/components/*.tsx (unchanged since iter 2)."},
+      {"component": "TimeWheel (or child)", "issue": "Console warning: props.pointerEvents is deprecated. Use style.pointerEvents. Reference: /app/frontend/src/components/TimeWheel.tsx (unchanged since iter 2)."},
+      {"component": "expo-notifications on web", "issue": "Info warning: '[expo-notifications] Listening to push token changes is not yet fully supported on web'. Expected; push only works on native build. No action needed for preview."},
+      {"component": "React-19 lib compat", "issue": "Console error: 'Accessing element.ref was removed in React 19. ref is now a regular prop.' Coming from a lib (likely @gorhom/bottom-sheet or reanimated). Non-blocking; track dep versions."},
+      {"component": "Animated / RN Web", "issue": "Console warning: 'Animated: useNativeDriver is not supported' — expected on web preview; no action."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3.py",
+    "/app/test_reports/pytest/pytest_iteration3.xml"
+  ],
+  "action_items": [
+    "Render a Pressable with testID=\"save-event-button\" in EventSheet.tsx (e.g. as a bookmark icon overlay on the hero using styles.saveHero) wired to toggleSave() and reflecting `saved` state.",
+    "Add a distinct recurring badge with testID=\"recurring-badge\" when event.is_recurring is true, displaying event.recurrence_label (e.g. small pill next to the category badge).",
+    "(Nice-to-have) Add tabBarButton testID or accessibility label per tab so E2E can target tabs directly (currently reached via text label).",
+    "(Nice-to-have) Migrate deprecated shadow* to boxShadow and move pointerEvents to style.pointerEvents."
+  ],
+  "critical_code_review_comments": [
+    "Backend seed logic in /app/backend/server.py is idempotent via count check on db.events; verified=True and venue_name are persisted correctly on all 7 KA venues.",
+    "next_recurring_occurrence() correctly picks the next matching weekday+time within 15-day window; verified DECKZEHN and VENUS BAR fall on their spec'd weekdays.",
+    "with_live_count() safely overrides next_occurrence for recurring events and preserves start_time for one-offs.",
+    "Saves endpoints correctly return 401 without token; toggle_save is idempotent per (event_id, user_id).",
+    "register-push swallows relay errors and still returns 201 — matches spec 'may be placeholder — should not 500'.",
+    "MongoDB _id is properly excluded via {\"_id\": 0} projections on all responses (events, messages, participants, saved, attending, sessions).",
+    "EventSheet imports Bookmark icon and defines styles.saveHero + toggleSave logic but never renders the button — appears half-implemented."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration3.py (new)"] ,
+  "success_rate": {"backend": "100% (16/16 iteration3 + 14/14 iter2 + 14/14 iter1)", "frontend": "~92% — all screens/tabs/testIDs work except two missing EventSheet testIDs"},
+  "seed_data_creation": "Pytest created TEST_ITER3 Recurring Loft event via POST /api/events (auth) with banner_url, emoji, recurrence_freq=weekly, recurrence_days=[4,5]. Also toggled saves and checkins for demo user. All test data prefixed TEST_ per convention.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All backend features for iter3 are green. Frontend gap: EventSheet is missing two testIDs (save-event-button and recurring-badge). After main agent adds them, re-run: (a) tap surprise-me-button on Map, (b) assert both testIDs exist, (c) tap save-event-button and verify GET /api/events/{id}/save-status returns saved=true. Tab bar has no per-tab testIDs — use text labels (Map/Explore/Create/Chats/Profile). Demo login is via [data-testid=demo-login-button] which calls POST /api/auth/dev-session (ALLOW_DEV_LOGIN=true set in backend/.env). All 22 Karlsruhe-related tests + full CRUD/auth/saves/messages/participants coverage kept in /app/backend/tests/test_iteration3.py.",
+  "rca_of_issue": "save-event-button + recurring-badge: In /app/frontend/src/components/EventSheet.tsx the developer added the `saved` state, `loadSocial` fetch of save-status, `toggleSave` handler, and a `styles.saveHero` position style, but forgot to render the actual <Pressable testID=\"save-event-button\"> in the hero JSX (lines 86-103). Similarly, event.is_recurring is used only in an inline meta row (line 108-111) instead of a dedicated badge component with testID=\"recurring-badge\". Fix: add a bookmark Pressable overlay in the hero using styles.saveHero + Ionicons name={saved?'bookmark':'bookmark-outline'} onPress={toggleSave} testID=\"save-event-button\"; and, when event.is_recurring, render a small pill (e.g. next to catBadge) with testID=\"recurring-badge\" showing event.recurrence_label."
+}

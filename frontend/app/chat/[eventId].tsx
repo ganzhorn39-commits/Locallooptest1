@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput, FlatList, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, FlatList, Platform, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Ionicons } from "@expo/vector-icons";
@@ -66,7 +66,7 @@ export default function Chat() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="chat-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-        <Pressable testID="chat-back" onPress={() => router.back()} style={{ width: 26 }}>
+        <Pressable testID="chat-back" onPress={() => { Keyboard.dismiss(); router.back(); }} hitSlop={12} style={{ width: 26 }}>
           <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>

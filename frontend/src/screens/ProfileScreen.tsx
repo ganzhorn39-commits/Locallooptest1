@@ -11,8 +11,8 @@ import { useAuth } from "@/src/auth/AuthContext";
 import { api } from "@/src/api/client";
 import { pickImage } from "@/src/utils/pickImage";
 
-export default function Profile() {
-  const { colors } = useTheme();
+export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
+  const { colors, isDark, toggle } = useTheme();
   const { user, logout, refresh } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -27,13 +27,12 @@ export default function Profile() {
   const inputStyle = [styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }];
 
   const changePhoto = async () => {
-    const res = await pickImage(Platform.OS === "web" ? "library" : "library");
+    const res = await pickImage("library");
     if ("base64" in res) setPicture(res.base64);
   };
 
   const save = async () => {
-    setSaving(true);
-    setSaved(false);
+    setSaving(true); setSaved(false);
     try {
       await api.updateProfile({ name, bio, instagram, picture });
       await refresh();
@@ -45,24 +44,20 @@ export default function Profile() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="profile-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-        <Pressable testID="profile-back" onPress={() => router.back()} style={{ width: 26 }}>
-          <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
-        </Pressable>
+        {showBack ? (
+          <Pressable testID="profile-back" onPress={() => router.back()} style={{ width: 26 }}><Ionicons name="chevron-back" size={26} color={colors.onSurface} /></Pressable>
+        ) : <View style={{ width: 26 }} />}
         <Text style={[styles.headerTitle, { color: colors.onSurface }]}>My Profile</Text>
-        <View style={{ width: 26 }} />
+        <Pressable testID="theme-toggle" onPress={toggle} style={{ width: 26 }}>
+          <Ionicons name={isDark ? "sunny" : "moon"} size={22} color={colors.onSurface} />
+        </Pressable>
       </View>
 
-      <KeyboardAwareScrollView contentContainerStyle={styles.body} bottomOffset={20} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 90 }]} bottomOffset={20} keyboardShouldPersistTaps="handled">
         <View style={styles.avatarWrap}>
           <Pressable testID="change-photo" onPress={changePhoto} style={[styles.avatar, { backgroundColor: colors.surfaceTertiary, borderColor: colors.brand }]}>
-            {picture ? (
-              <Image source={{ uri: picture }} style={styles.avatarImg} contentFit="cover" />
-            ) : (
-              <Ionicons name="person" size={44} color={colors.onSurfaceTertiary} />
-            )}
-            <View style={[styles.avatarEdit, { backgroundColor: colors.brand }]}>
-              <Ionicons name="camera" size={16} color="#FFFFFF" />
-            </View>
+            {picture ? <Image source={{ uri: picture }} style={styles.avatarImg} contentFit="cover" /> : <Ionicons name="person" size={44} color={colors.onSurfaceTertiary} />}
+            <View style={[styles.avatarEdit, { backgroundColor: colors.brand }]}><Ionicons name="camera" size={16} color="#FFFFFF" /></View>
           </Pressable>
           <Text style={[styles.email, { color: colors.onSurfaceTertiary }]}>{user?.email}</Text>
         </View>
@@ -93,9 +88,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1 },
   headerTitle: { fontSize: 18, fontWeight: "800" },
-  body: { padding: 16, gap: 10, paddingBottom: 60 },
+  body: { padding: 16, gap: 10 },
   avatarWrap: { alignItems: "center", gap: 8, marginBottom: 8 },
-  avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "visible" },
+  avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   avatarImg: { width: "100%", height: "100%", borderRadius: 55 },
   avatarEdit: { position: "absolute", bottom: 0, right: 0, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#FFFFFF" },
   email: { fontSize: 14 },

@@ -25,6 +25,22 @@ api_router = APIRouter(prefix="/api")
 
 EMERGENT_SESSION_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
+# ----------------------------- Push (Emergent relay) -----------------------------
+PUSH_BASE_URL = "https://integrations.emergentagent.com"
+PUSH_KEY = os.environ.get("EMERGENT_PUSH_KEY", "placeholder")
+_push_client = httpx.AsyncClient(base_url=PUSH_BASE_URL, headers={"X-Push-Key": PUSH_KEY}, timeout=10.0)
+
+
+async def send_push(recipients, data, idempotency_key=None):
+    if not recipients:
+        return
+    recipients = recipients[:100]
+    payload = {"recipients": recipients, "data": data}
+    if idempotency_key:
+        payload["$idempotency_key"] = idempotency_key
+    resp = await _push_client.post("/api/v1/push/trigger", json=payload)
+    resp.raise_for_status()
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -40,12 +56,19 @@ class EventCreate(BaseModel):
     start_time: str  # ISO string
     description: str = ""
     image_url: str = ""
+    banner_url: str = ""
+    emoji: str = ""
     instagram: str = ""
     website: str = ""
     tickets_url: str = ""
     latitude: float
     longitude: float
     address: str = ""
+    venue_name: str = ""
+    is_recurring: bool = False
+    recurrence_freq: str = ""  # weekly | biweekly | monthly
+    recurrence_days: List[int] = []  # 0=Mon ... 6=Sun
+    recurrence_label: str = ""
 
 
 class Event(BaseModel):
@@ -55,12 +78,20 @@ class Event(BaseModel):
     start_time: str
     description: str = ""
     image_url: str = ""
+    banner_url: str = ""
+    emoji: str = ""
     instagram: str = ""
     website: str = ""
     tickets_url: str = ""
     latitude: float
     longitude: float
     address: str = ""
+    venue_name: str = ""
+    verified: bool = False
+    is_recurring: bool = False
+    recurrence_freq: str = ""
+    recurrence_days: List[int] = []
+    recurrence_label: str = ""
     checkins: int = 0
     created_by: str = "demo"
     created_at: str = Field(default_factory=lambda: now_utc().isoformat())
@@ -166,12 +197,34 @@ async def logout(authorization: Optional[str] = Header(None)):
 
 
 # ----------------------------- Events -----------------------------
+def next_recurring_occurrence(days, hour, minute):
+    if not days:
+        return None
+    now = now_utc()
+    for offset in range(0, 15):
+        d = now + timedelta(days=offset)
+        if d.weekday() in days:
+            cand = d.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if cand > now:
+                return cand.isoformat()
+    return None
+
+
 def with_live_count(doc: dict) -> dict:
-    """Add a simulated live-pulse jitter on top of real checkins."""
+    """Add a simulated live-pulse jitter on top of real checkins + next occurrence."""
     base = doc.get("checkins", 0)
     jitter = random.randint(0, 18) + (hash(doc["id"]) % 40)
     doc["live_count"] = base + abs(jitter)
     doc["is_hot"] = doc["live_count"] > 45
+    if doc.get("is_recurring") and doc.get("recurrence_days"):
+        try:
+            st = datetime.fromisoformat(doc["start_time"])
+            nxt = next_recurring_occurrence(doc["recurrence_days"], st.hour, st.minute)
+            doc["next_occurrence"] = nxt or doc["start_time"]
+        except Exception:
+            doc["next_occurrence"] = doc["start_time"]
+    else:
+        doc["next_occurrence"] = doc["start_time"]
     return doc
 
 
@@ -287,6 +340,17 @@ async def post_message(event_id: str, payload: MessageCreate, user=Depends(get_c
         "text": text, "created_at": now_utc().isoformat(),
     }
     await db.messages.insert_one(dict(msg))
+    # Notify other attendees (non-blocking)
+    try:
+        others = await db.checkins.find({"event_id": event_id, "user_id": {"$ne": user["user_id"]}}).to_list(100)
+        recipients = [o["user_id"] for o in others]
+        if recipients:
+            await send_push(
+                recipients=recipients,
+                data={"title": msg["user_name"], "message": text, "action_url": f"/chat/{event_id}"},
+            )
+    except Exception as e:
+        logger.warning(f"chat push failed (non-blocking): {e}")
     return msg
 
 
@@ -432,6 +496,64 @@ async def vote_suggestion(crew_id: str, sug_id: str, user=Depends(get_current_us
     return await crew_detail(crew, user["user_id"])
 
 
+# ----------------------------- Push registration + Saves -----------------------------
+class RegisterPushBody(BaseModel):
+    user_id: str
+    platform: str
+    device_token: str
+
+
+@api_router.post("/register-push", status_code=201)
+async def register_push(body: RegisterPushBody):
+    try:
+        resp = await _push_client.post("/api/v1/push/users/register", json=body.model_dump())
+        resp.raise_for_status()
+    except Exception as e:
+        logger.warning(f"register-push failed (non-blocking): {e}")
+    return {"status": "registered"}
+
+
+@api_router.post("/events/{event_id}/save")
+async def toggle_save(event_id: str, user=Depends(get_current_user)):
+    ev = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+    existing = await db.saves.find_one({"event_id": event_id, "user_id": user["user_id"]})
+    if existing:
+        await db.saves.delete_one({"event_id": event_id, "user_id": user["user_id"]})
+        return {"saved": False}
+    await db.saves.insert_one({"event_id": event_id, "user_id": user["user_id"], "at": now_utc().isoformat()})
+    try:
+        await send_push(
+            recipients=[user["user_id"]],
+            data={"title": "Saved to your loop 🔖", "message": f"We'll remind you before \"{ev['title']}\" starts.", "action_url": "/(tabs)/explore"},
+        )
+    except Exception as e:
+        logger.warning(f"save push failed (non-blocking): {e}")
+    return {"saved": True}
+
+
+@api_router.get("/events/{event_id}/save-status")
+async def save_status(event_id: str, user=Depends(get_current_user)):
+    return {"saved": bool(await db.saves.find_one({"event_id": event_id, "user_id": user["user_id"]}))}
+
+
+@api_router.get("/my/saved")
+async def my_saved(user=Depends(get_current_user)):
+    saves = await db.saves.find({"user_id": user["user_id"]}).to_list(500)
+    ids = [s["event_id"] for s in saves]
+    docs = await db.events.find({"id": {"$in": ids}}, {"_id": 0}).to_list(500)
+    return [with_live_count(d) for d in docs]
+
+
+@api_router.get("/my/attending")
+async def my_attending(user=Depends(get_current_user)):
+    checks = await db.checkins.find({"user_id": user["user_id"]}).to_list(500)
+    ids = [c["event_id"] for c in checks]
+    docs = await db.events.find({"id": {"$in": ids}}, {"_id": 0}).to_list(500)
+    return [with_live_count(d) for d in docs]
+
+
 # ----------------------------- Seed -----------------------------
 SEED_EVENTS = [
     {
@@ -493,6 +615,60 @@ SEED_EVENTS = [
 ]
 
 
+MOCK_ATTENDEES = [
+    "Lena", "Max", "Sophie", "Jonas", "Mia", "Noah", "Emma", "Ben", "Lea", "Tim", "Anna", "Paul",
+]
+
+_COFFEE = "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?crop=entropy&cs=srgb&fm=jpg&q=85"
+_ROOFTOP = "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?crop=entropy&cs=srgb&fm=jpg&q=85"
+_BAR = "https://images.unsplash.com/photo-1514933651103-005eec06c04b?crop=entropy&cs=srgb&fm=jpg&q=85"
+_WINE = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?crop=entropy&cs=srgb&fm=jpg&q=85"
+_REST = "https://images.unsplash.com/photo-1551883738-19ffa3dc4c43?crop=entropy&cs=srgb&fm=jpg&q=85"
+_BOARD = "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?crop=entropy&cs=srgb&fm=jpg&q=85"
+
+# Real Karlsruhe venues (verified business partners) with attached demo events.
+KA_VENUES = [
+    {"venue_name": "DECKZEHN (Rooftop & Beach)", "title": "Sunset Rooftop Beats & Sand", "category": "nightlife", "emoji": "🍹",
+     "description": "Barfuß im Sand über den Dächern von Karlsruhe. Genieße Cocktails, Liegestühle und chillige House-Beats im 10. Stock.",
+     "image_url": _ROOFTOP, "instagram": "deckzehn", "website": "https://deckzehn.de", "tickets_url": "",
+     "latitude": 49.0089, "longitude": 8.4069, "address": "Zähringer Str. 69, 76133 Karlsruhe",
+     "is_recurring": True, "recurrence_freq": "weekly", "recurrence_days": [3, 5], "recurrence_label": "Every Thursday & Saturday at 18:00", "hour": 18, "minute": 0, "in_days": 0},
+    {"venue_name": "VENUS BAR", "title": "Friday Night Venus Groove", "category": "nightlife", "emoji": "🍸",
+     "description": "Die perfekte Mischung aus Bar und Club für ein trendbewusstes Publikum. Cocktails, elektronische Beats und gute Vibes.",
+     "image_url": _BAR, "instagram": "venusbar.ka", "website": "", "tickets_url": "",
+     "latitude": 49.0093, "longitude": 8.3992, "address": "Kaiserstraße 134, 76133 Karlsruhe",
+     "is_recurring": True, "recurrence_freq": "weekly", "recurrence_days": [4], "recurrence_label": "Every Friday at 20:00", "hour": 20, "minute": 0, "in_days": 0},
+    {"venue_name": "Mama's Café • Restaurant", "title": "Acoustic Sunday & Brunch", "category": "food", "emoji": "☕",
+     "description": "Enjoy a relaxed brunch accompanied by live acoustic music from local Karlsruhe students.",
+     "image_url": _COFFEE, "instagram": "mamas.karlsruhe", "website": "", "tickets_url": "",
+     "latitude": 49.0125, "longitude": 8.4005, "address": "Hans-Thoma-Straße 3, 76133 Karlsruhe",
+     "is_recurring": False, "hour": 11, "minute": 0, "in_days": 2},
+    {"venue_name": "drei&zwanzig", "title": "Specialty Coffee Tasting Session", "category": "food", "emoji": "☕",
+     "description": "Discover different roasting profiles and get a crash course in barista latte art.",
+     "image_url": _COFFEE, "instagram": "dreiundzwanzig", "website": "", "tickets_url": "",
+     "latitude": 49.0105, "longitude": 8.3985, "address": "Blumenstraße 19, 76133 Karlsruhe",
+     "is_recurring": False, "hour": 15, "minute": 0, "in_days": 1},
+    {"venue_name": "Wilma Wunder", "title": "After-Work Cocktail Night", "category": "food", "emoji": "🍕",
+     "description": "Wind down the work or study day at Marktplatz with 2-for-1 cocktails and chill house beats.",
+     "image_url": _REST, "instagram": "wilmawunder.karlsruhe", "website": "", "tickets_url": "",
+     "latitude": 49.0085, "longitude": 8.4038, "address": "Karl-Friedrich-Straße 9, 76133 Karlsruhe",
+     "is_recurring": False, "hour": 18, "minute": 30, "in_days": 1},
+    {"venue_name": "Bistro Le Renard", "title": "Wine & French Cheese Pairing", "category": "nightlife", "emoji": "🍷",
+     "description": "A cozy evening exploring select regional wines paired with French bistro delicacies.",
+     "image_url": _WINE, "instagram": "lerenard.ka", "website": "", "tickets_url": "",
+     "latitude": 49.0080, "longitude": 8.3980, "address": "Waldstraße 60, 76133 Karlsruhe",
+     "is_recurring": False, "hour": 19, "minute": 0, "in_days": 3},
+    {"venue_name": "Café Wohnzimmer", "title": "Cozy Board Game Night", "category": "food", "emoji": "☕",
+     "description": "Bring your friends, grab a craft beer, and challenge others to legendary board game rounds.",
+     "image_url": _BOARD, "instagram": "cafewohnzimmer", "website": "", "tickets_url": "",
+     "latitude": 49.0083, "longitude": 8.4111, "address": "Zähringerstraße 72, 76133 Karlsruhe",
+     "is_recurring": False, "hour": 19, "minute": 30, "in_days": 2},
+]
+
+SEED_MESSAGES = ["Wer ist heute dabei? 🙌", "Bin gegen 20 Uhr da!", "Freu mich drauf 🎉", "Can someone save a spot?", "See you all there!"]
+
+
+
 @app.on_event("startup")
 async def seed_and_index():
     await db.users.create_index("email", unique=True)
@@ -503,11 +679,37 @@ async def seed_and_index():
     await db.crews.create_index("invite_code")
     count = await db.events.count_documents({})
     if count == 0:
-        base = now_utc()
-        for i, e in enumerate(SEED_EVENTS):
-            ev = Event(**e, start_time=(base + timedelta(minutes=30 + i * 80)).isoformat())
+        now = now_utc()
+        # seed business owner + mock attendees
+        await db.users.update_one({"user_id": "seed_business"}, {"$set": {
+            "user_id": "seed_business", "email": "partners@localloop.app", "name": "LocalLoop Partners",
+            "picture": "", "account_type": "business", "created_at": now.isoformat()}}, upsert=True)
+        mocks = []
+        for i, name in enumerate(MOCK_ATTENDEES):
+            uid = f"seed_user_{i}"
+            await db.users.update_one({"user_id": uid}, {"$set": {
+                "user_id": uid, "email": f"{uid}@localloop.app", "name": name,
+                "picture": "", "account_type": "user", "created_at": now.isoformat()}}, upsert=True)
+            mocks.append((uid, name))
+
+        for v in KA_VENUES:
+            v = dict(v)
+            hour = v.pop("hour"); minute = v.pop("minute"); in_days = v.pop("in_days", 1)
+            st = now.replace(hour=hour, minute=minute, second=0, microsecond=0) + timedelta(days=in_days)
+            v["banner_url"] = v["image_url"]
+            ev = Event(**v, start_time=st.isoformat(), verified=True, created_by="seed_business")
             await db.events.insert_one(ev.dict())
-        logger.info("Seeded %d demo events", len(SEED_EVENTS))
+            n = random.randint(3, 6)
+            attendees = random.sample(mocks, n)
+            for uid, _ in attendees:
+                await db.checkins.insert_one({"event_id": ev.id, "user_id": uid, "at": now.isoformat()})
+            await db.events.update_one({"id": ev.id}, {"$inc": {"checkins": n}})
+            for j, (uid, name) in enumerate(random.sample(attendees, min(3, n))):
+                await db.messages.insert_one({
+                    "id": str(uuid.uuid4()), "event_id": ev.id, "user_id": uid,
+                    "user_name": name, "user_picture": "", "text": random.choice(SEED_MESSAGES),
+                    "created_at": (now + timedelta(minutes=j)).isoformat()})
+        logger.info("Seeded %d Karlsruhe venues", len(KA_VENUES))
 
 
 @api_router.get("/")

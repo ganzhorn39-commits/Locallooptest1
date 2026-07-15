@@ -37,6 +37,13 @@ export type EventItem = {
   live_count: number;
   is_hot: boolean;
   created_by: string;
+  emoji?: string;
+  banner_url?: string;
+  venue_name?: string;
+  verified?: boolean;
+  is_recurring?: boolean;
+  recurrence_label?: string;
+  next_occurrence?: string;
 };
 
 export const api = {
@@ -51,6 +58,16 @@ export const api = {
     req(`/events/${id}/checkin-status`),
   participants: (id: string): Promise<{ count: number; participants: any[] }> =>
     req(`/events/${id}/participants`),
+
+  // Saves
+  toggleSave: (id: string): Promise<{ saved: boolean }> => req(`/events/${id}/save`, { method: "POST" }),
+  saveStatus: (id: string): Promise<{ saved: boolean }> => req(`/events/${id}/save-status`),
+  mySaved: (): Promise<EventItem[]> => req(`/my/saved`),
+  myAttending: (): Promise<EventItem[]> => req(`/my/attending`),
+
+  // Push
+  registerPush: (payload: { user_id: string; platform: string; device_token: string }) =>
+    req(`/register-push`, { method: "POST", body: JSON.stringify(payload) }),
 
   // Profile
   updateProfile: (payload: any) => req(`/profile`, { method: "PATCH", body: JSON.stringify(payload) }),

@@ -49,8 +49,8 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
             style={[styles.pinWrap, { left: p.left - 20, top: p.top - 24 }]}
           >
             {e.is_hot && <View style={[styles.pulse, { backgroundColor: color }]} />}
-            <View style={[styles.pin, { backgroundColor: color }]}>
-              <Text style={styles.emoji}>{meta.emoji}</Text>
+            <View style={[styles.pin, { backgroundColor: color, shadowColor: color, shadowRadius: 10, shadowOpacity: 0.9, shadowOffset: { width: 0, height: 0 } }]}>
+              <Text style={styles.emoji}>{e.emoji || meta.emoji}</Text>
             </View>
           </Pressable>
         );
