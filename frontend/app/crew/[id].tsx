@@ -7,12 +7,14 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { api, EventItem } from "@/src/api/client";
+import { useI18n } from "@/src/i18n";
 import { categoryMeta } from "@/src/constants/categories";
 
 export default function CrewDetail() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [crew, setCrew] = useState<any>(null);
@@ -65,7 +67,7 @@ export default function CrewDetail() {
     return <View style={[styles.container, { backgroundColor: colors.surface, justifyContent: "center" }]}><ActivityIndicator color={colors.brand} size="large" /></View>;
   }
   if (!crew) {
-    return <View style={[styles.container, { backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" }]}><Text style={{ color: colors.onSurface }}>Crew not found</Text></View>;
+    return <View style={[styles.container, { backgroundColor: colors.surface, justifyContent: "center", alignItems: "center" }]}><Text style={{ color: colors.onSurface }}>{t("crew_not_found")}</Text></View>;
   }
 
   const inputStyle = [styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }];
@@ -85,37 +87,37 @@ export default function CrewDetail() {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <View style={[styles.inviteCard, { backgroundColor: colors.brandTertiary }]}>
           <View>
-            <Text style={[styles.inviteLabel, { color: colors.onBrandTertiary }]}>INVITE CODE</Text>
+            <Text style={[styles.inviteLabel, { color: colors.onBrandTertiary }]}>{t("invite_code_label")}</Text>
             <Text style={[styles.inviteCode, { color: colors.onBrandTertiary }]} testID="crew-invite-code">{crew.invite_code}</Text>
           </View>
           <Pressable onPress={share} style={[styles.shareBtn, { backgroundColor: colors.brand }]} testID="share-crew-btn">
             <Ionicons name="share-social" size={16} color="#FFFFFF" />
-            <Text style={styles.shareBtnText}>Invite</Text>
+            <Text style={styles.shareBtnText}>{t("invite")}</Text>
           </Pressable>
         </View>
 
-        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>{crew.members.length} Member{crew.members.length !== 1 ? "s" : ""}</Text>
+        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>{crew.members.length} {crew.members.length !== 1 ? t("member_other") : t("member_one")}</Text>
         <View style={styles.membersRow}>
           {crew.members.map((m: any) => (
             <View key={m.user_id} style={styles.member}>
               <View style={[styles.memberAvatar, { backgroundColor: colors.surfaceTertiary }]}>
                 <Ionicons name="person" size={18} color={colors.onSurfaceTertiary} />
               </View>
-              <Text style={[styles.memberName, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>{m.name || "Guest"}</Text>
+              <Text style={[styles.memberName, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>{m.name || t("guest")}</Text>
             </View>
           ))}
         </View>
 
-        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>Where to tonight? · Vote 🗳️</Text>
+        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>{t("crew_vote_title")}</Text>
         {crew.suggestions.length === 0 && (
-          <Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>No suggestions yet. Add the first idea below.</Text>
+          <Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("no_suggestions")}</Text>
         )}
         {crew.suggestions.map((s: any) => {
           return (
             <View key={s.id} style={[styles.sugRow, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.sugTitle, { color: colors.onSurface }]}>{s.event_title || s.custom_text}</Text>
-                <Text style={[styles.sugMeta, { color: colors.onSurfaceTertiary }]}>{s.event_id ? "📍 Map event" : "💬 Idea"} · {s.vote_count} vote{s.vote_count !== 1 ? "s" : ""}</Text>
+                <Text style={[styles.sugMeta, { color: colors.onSurfaceTertiary }]}>{s.event_id ? t("sug_map") : t("sug_idea")} · {s.vote_count} {s.vote_count !== 1 ? t("vote_other") : t("vote_one")}</Text>
               </View>
               <Pressable testID={`vote-${s.id}`} onPress={() => vote(s.id)} style={[styles.voteBtn, { backgroundColor: s.voted ? colors.brand : colors.surfaceTertiary, borderColor: s.voted ? colors.brand : colors.border }]}>
                 <Ionicons name={s.voted ? "heart" : "heart-outline"} size={18} color={s.voted ? "#FFFFFF" : colors.onSurface} />
@@ -127,13 +129,13 @@ export default function CrewDetail() {
 
         <Pressable testID="suggest-event-button" onPress={openPicker} style={[styles.suggestEventBtn, { borderColor: colors.brand }]}>
           <Ionicons name="location" size={18} color={colors.brand} />
-          <Text style={[styles.suggestEventText, { color: colors.brand }]}>Suggest a map event</Text>
+          <Text style={[styles.suggestEventText, { color: colors.brand }]}>{t("suggest_map_event")}</Text>
         </Pressable>
       </ScrollView>
 
       <KeyboardStickyView>
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-          <TextInput testID="input-custom-suggestion" value={custom} onChangeText={setCustom} placeholder="Suggest an idea..." placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
+          <TextInput testID="input-custom-suggestion" value={custom} onChangeText={setCustom} placeholder={t("suggest_idea_ph")} placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { flex: 1 }]} />
           <Pressable testID="add-custom-suggestion" onPress={suggestCustom} disabled={busy} style={[styles.sendBtn, { backgroundColor: colors.brand }]}>
             <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
           </Pressable>

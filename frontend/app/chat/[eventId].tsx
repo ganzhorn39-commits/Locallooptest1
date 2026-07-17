@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useI18n } from "@/src/i18n";
 import { api } from "@/src/api/client";
 
 export default function Chat() {
@@ -13,10 +14,11 @@ export default function Chat() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
 
   const [messages, setMessages] = useState<any[]>([]);
-  const [title, setTitle] = useState("Group Chat");
+  const [title, setTitle] = useState("");
   const [participants, setParticipants] = useState(0);
   const [text, setText] = useState("");
   const listRef = useRef<FlatList>(null);
@@ -89,14 +91,14 @@ export default function Chat() {
           contentContainerStyle={styles.list}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           testID="chat-messages"
-          ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>Say hi to everyone heading here! 👋</Text>}
+          ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("say_hi")}</Text>}
         />
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
           <TextInput
             testID="chat-input"
             value={text}
             onChangeText={setText}
-            placeholder="Message the crew..."
+            placeholder={t("message_ph")}
             placeholderTextColor={colors.onSurfaceTertiary}
             style={[styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }]}
             onSubmitEditing={send}

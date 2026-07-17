@@ -9,6 +9,7 @@ import * as Haptics from "expo-haptics";
 
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
+import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { DEFAULT_REGION } from "@/src/constants/categories";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
@@ -20,6 +21,7 @@ import EventSheet from "@/src/components/EventSheet";
 export default function MapHome() {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -119,16 +121,6 @@ export default function MapHome() {
       <MapCanvas events={filtered} region={region} onSelect={onSelectPin} mapRef={mapRef} />
 
       <View style={[styles.headerWrap, { top: insets.top + 8 }]} pointerEvents="box-none">
-        <BlurView intensity={50} tint={isDark ? "dark" : "light"} style={[styles.brandBar, { borderColor: colors.border, backgroundColor: colors.surfaceSecondary + (Platform.OS === "web" ? "" : "AA") }]}>
-          <View style={styles.brandRow}>
-            <View style={[styles.brandDot, { backgroundColor: colors.brand }]} />
-            <Text style={[styles.brandName, { color: colors.onSurface }]}>LocalLoop</Text>
-          </View>
-          <Pressable testID="theme-toggle" onPress={toggle} style={[styles.iconBtn, { backgroundColor: colors.surfaceTertiary }]}>
-            <Ionicons name={isDark ? "sunny" : "moon"} size={18} color={colors.onSurface} />
-          </Pressable>
-        </BlurView>
-
         <View style={styles.searchWrap}>
           <SearchFilterBar query={query} onQuery={setQuery} quick={quick} onToggleQuick={toggleQuick} />
         </View>
@@ -152,7 +144,7 @@ export default function MapHome() {
         style={[styles.surprise, { bottom: insets.bottom + 90, backgroundColor: colors.surfaceInverse }]}
       >
         <Text style={{ fontSize: 16 }}>🎲</Text>
-        <Text style={[styles.surpriseText, { color: colors.onSurfaceInverse }]}>Surprise Me</Text>
+        <Text style={[styles.surpriseText, { color: colors.onSurfaceInverse }]}>{t("surprise_me")}</Text>
       </Pressable>
 
       {loading && (
@@ -182,15 +174,6 @@ export default function MapHome() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   headerWrap: { position: "absolute", left: 0, right: 0, gap: 8 },
-  brandBar: {
-    marginHorizontal: 16, height: 50, borderRadius: 16, borderWidth: 1,
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 14, overflow: "hidden",
-  },
-  brandRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brandDot: { width: 12, height: 12, borderRadius: 6 },
-  brandName: { fontSize: 18, fontWeight: "800", letterSpacing: -0.5 },
-  iconBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
   searchWrap: { paddingHorizontal: 16 },
   recenter: { position: "absolute", right: 16, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   surprise: {

@@ -50,6 +50,18 @@ const DICT: Record<Lang, Record<string, string>> = {
     join_code_ph: "Join with INVITE CODE", tap_to_chat: "tap to chat", attending: "attending",
     // chat room
     message_ph: "Message the crew...", say_hi: "Say hi to everyone heading here! 👋",
+    // map
+    surprise_me: "Surprise Me",
+    // chat + crew
+    chat_group: "Group Chat", crew_not_found: "Crew not found",
+    invite_code_label: "INVITE CODE", invite: "Invite",
+    member_one: "Member", member_other: "Members", guest: "Guest",
+    crew_vote_title: "Where to tonight? · Vote 🗳️",
+    no_suggestions: "No suggestions yet. Add the first idea below.",
+    sug_map: "📍 Map event", sug_idea: "💬 Idea",
+    vote_one: "vote", vote_other: "votes",
+    suggest_map_event: "Suggest a map event", suggest_idea_ph: "Suggest an idea...",
+    pick_event: "Pick an event",
   },
   de: {
     tab_map: "Karte", tab_explore: "Entdecken", tab_create: "Erstellen", tab_chats: "Chats", tab_profile: "Profil",
@@ -84,6 +96,16 @@ const DICT: Record<Lang, Record<string, string>> = {
     checkin_unlock: "Checke bei einem Event ein, um den Gruppenchat freizuschalten.", new_crew_ph: "Neuer Crew-Name",
     join_code_ph: "Mit EINLADUNGSCODE beitreten", tap_to_chat: "tippen zum Chatten", attending: "dabei",
     message_ph: "Nachricht an die Crew...", say_hi: "Sag allen Hallo, die herkommen! 👋",
+    surprise_me: "Überrasch mich",
+    chat_group: "Gruppenchat", crew_not_found: "Crew nicht gefunden",
+    invite_code_label: "EINLADUNGSCODE", invite: "Einladen",
+    member_one: "Mitglied", member_other: "Mitglieder", guest: "Gast",
+    crew_vote_title: "Wohin heute Abend? · Abstimmen 🗳️",
+    no_suggestions: "Noch keine Vorschläge. Füge unten die erste Idee hinzu.",
+    sug_map: "📍 Karten-Event", sug_idea: "💬 Idee",
+    vote_one: "Stimme", vote_other: "Stimmen",
+    suggest_map_event: "Karten-Event vorschlagen", suggest_idea_ph: "Idee vorschlagen...",
+    pick_event: "Event auswählen",
   },
 };
 

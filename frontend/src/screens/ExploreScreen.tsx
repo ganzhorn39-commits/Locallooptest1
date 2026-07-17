@@ -16,6 +16,7 @@ import EventSheet from "@/src/components/EventSheet";
 export default function ExploreScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
   const [events, setEvents] = useState<EventItem[]>([]);
