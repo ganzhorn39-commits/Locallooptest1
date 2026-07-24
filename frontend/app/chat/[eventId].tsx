@@ -73,7 +73,7 @@ export default function Chat() {
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={[styles.headerTitle, { color: colors.onSurface }]} numberOfLines={1}>{title}</Text>
-          <Text style={[styles.headerSub, { color: colors.onSurfaceTertiary }]}>{participants} attending</Text>
+          <Text style={[styles.headerSub, { color: colors.onSurfaceTertiary }]}>{participants} {t("attending")}</Text>
         </View>
         <View style={{ width: 26 }} />
       </View>

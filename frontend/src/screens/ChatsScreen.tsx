@@ -61,15 +61,15 @@ export default function ChatsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="chats-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.onSurface }]}>Chats</Text>
+        <Text style={[styles.title, { color: colors.onSurface }]}>{t("chats_title")}</Text>
       </View>
 
       <KeyboardAwareScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 90, gap: 12 }} keyboardShouldPersistTaps="handled" bottomOffset={20}>
-        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>Event Group Chats</Text>
+        <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>{t("event_chats")}</Text>
         {loading ? (
           <ActivityIndicator color={colors.brand} style={{ marginTop: 10 }} />
         ) : attending.length === 0 ? (
-          <Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>Check into an event to unlock its group chat.</Text>
+          <Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("checkin_unlock")}</Text>
         ) : (
           attending.map((e) => {
             const meta = categoryMeta(e.category);
@@ -80,7 +80,7 @@ export default function ChatsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rowTitle, { color: colors.onSurface }]} numberOfLines={1}>{e.title}</Text>
-                  <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{e.live_count} attending · tap to chat</Text>
+                  <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{e.live_count} {t("attending")} · {t("tap_to_chat")}</Text>
                 </View>
                 <Ionicons name="chatbubbles" size={20} color={colors.brand} />
               </Pressable>
@@ -108,7 +108,7 @@ export default function ChatsScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, { color: colors.onSurface }]}>{c.name}</Text>
-              <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{c.member_count} member{c.member_count !== 1 ? "s" : ""} · code {c.invite_code}</Text>
+              <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{c.member_count} {c.member_count !== 1 ? t("member_other") : t("member_one")} · {c.invite_code}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceTertiary} />
           </Pressable>
