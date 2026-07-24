@@ -5,7 +5,23 @@ import * as Linking from "expo-linking";
 import { storage } from "@/src/utils/storage";
 import { api, TOKEN_KEY } from "@/src/api/client";
 
-type User = { user_id: string; email: string; name?: string; picture?: string };
+type User = {
+  user_id: string;
+  email: string;
+  name?: string;
+  picture?: string;
+  bio?: string;
+  instagram?: string;
+  birthdate?: string;
+  account_type?: "user" | "business";
+  onboarded?: boolean;
+  verified?: boolean;
+  business_name?: string;
+  business_category?: string;
+  business_address?: string;
+  business_website?: string;
+  business_instagram?: string;
+};
 type AuthState = { user: User | null; loading: boolean; loggingIn: boolean };
 
 type Ctx = AuthState & {

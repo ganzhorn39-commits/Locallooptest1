@@ -77,8 +77,10 @@ function AuthGate() {
   useEffect(() => {
     if (loading) return;
     const inAuth = segments[0] === "login";
+    const inOnboarding = segments[0] === "onboarding";
     if (!user && !inAuth) router.replace("/login");
-    else if (user && inAuth) router.replace("/(tabs)");
+    else if (user && !user.onboarded && !inOnboarding) router.replace("/onboarding");
+    else if (user && user.onboarded && (inAuth || inOnboarding)) router.replace("/(tabs)");
   }, [user, loading, segments]);
 
   return (
@@ -87,6 +89,7 @@ function AuthGate() {
       <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="login" options={{ animation: "fade" }} />
+        <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="chat/[eventId]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="crew/[id]" />
       </Stack>

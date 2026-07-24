@@ -18,7 +18,7 @@ export default function CategoryFilterRow({ selected, onSelect }: Props) {
 
   const chips = [
     { key: "all", label: t("cat_all"), icon: "sparkles", color: colors.brand },
-    ...CATEGORIES.map((c) => ({ key: c.key, label: t(`cat_${c.key}`), icon: c.icon, color: colors[c.colorKey] })),
+    ...CATEGORIES.map((c) => ({ key: c.key, label: t(`cat_${c.key}`), icon: c.icon, color: c.color })),
   ];
 
   return (

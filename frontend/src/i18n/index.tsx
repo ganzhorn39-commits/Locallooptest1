@@ -9,7 +9,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     // tabs
     tab_map: "Map", tab_explore: "Explore", tab_create: "Create", tab_chats: "Chats", tab_profile: "Profile",
     // categories
-    cat_all: "All", cat_nightlife: "Nightlife", cat_food: "Food", cat_sports: "Sports", cat_culture: "Culture",
+    cat_all: "All", cat_sports: "Sports & Fitness", cat_nightlife: "Nightlife & Clubs", cat_rooftop: "Rooftop & Bar",
+    cat_food: "Food & Culinary", cat_arts: "Arts & Culture", cat_networking: "Networking", cat_gaming: "Gaming & E-Sports",
+    cat_outdoor: "Outdoor & Nature", cat_workshops: "Workshops", cat_music: "Music & Concerts",
     // quick filters
     quick_today: "Today", quick_free: "Free Entry", quick_outdoor: "Outdoor", quick_near: "Near Me",
     // search
@@ -29,6 +31,19 @@ const DICT: Record<Lang, Record<string, string>> = {
     legal: "Legal", terms: "Terms of Service", privacy: "Privacy Policy", logout: "Log Out",
     terms_body: "By using LocalLoop you agree to discover and share local events responsibly. This is a demo build; no warranties are provided.",
     privacy_body: "LocalLoop stores your profile, check-ins and messages to power the map and chats. Your location is used only to center the map and is never shared without consent.",
+    // onboarding
+    onb_choose_role: "How will you use LocalLoop?", role_visitor: "I'm a Visitor", role_visitor_desc: "Discover events & meet people",
+    role_business: "Organizer / Business", role_business_desc: "List your venue & host events",
+    onb_your_profile: "Your Profile", onb_business_profile: "Business Profile",
+    onb_birthdate: "Birthdate", onb_birthdate_hint: "Select your date of birth",
+    onb_age_error: "You must be at least 16 to use LocalLoop.", onb_name_error: "Please enter your name.",
+    onb_biz_error: "Business name is required.", onb_continue: "Continue", onb_finish: "Finish Setup",
+    biz_name: "Business Name", biz_category: "Category", biz_address: "Address", biz_website: "Website", biz_instagram: "Instagram",
+    // reviews
+    verified: "Verified", reviews: "reviews", reviews_title: "Reviews", rate_venue: "Rate this venue",
+    your_rating: "Your rating", write_review: "Share your experience (optional)", submit_review: "Submit Review",
+    no_reviews: "No reviews yet — be the first!", review_need_checkin: "Check in to leave a review", review_thanks: "Thanks for your review! 🌟",
+    age_restricted_note: "18+ events are hidden based on your age",
     // explore
     explore_title: "Explore", no_match: "No events match your filters.",
     // create
@@ -65,7 +80,9 @@ const DICT: Record<Lang, Record<string, string>> = {
   },
   de: {
     tab_map: "Karte", tab_explore: "Entdecken", tab_create: "Erstellen", tab_chats: "Chats", tab_profile: "Profil",
-    cat_all: "Alle", cat_nightlife: "Nachtleben", cat_food: "Essen", cat_sports: "Sport", cat_culture: "Kultur",
+    cat_all: "Alle", cat_sports: "Sport & Fitness", cat_nightlife: "Nachtleben & Clubs", cat_rooftop: "Rooftop & Bar",
+    cat_food: "Essen & Kulinarik", cat_arts: "Kunst & Kultur", cat_networking: "Networking", cat_gaming: "Gaming & E-Sport",
+    cat_outdoor: "Natur & Outdoor", cat_workshops: "Workshops", cat_music: "Musik & Konzerte",
     quick_today: "Heute", quick_free: "Freier Eintritt", quick_outdoor: "Draußen", quick_near: "In der Nähe",
     search_placeholder: "Events, Kategorien, Städte suchen...",
     slogan: "Dein Stadtpuls. Live auf der Karte.",
@@ -81,6 +98,17 @@ const DICT: Record<Lang, Record<string, string>> = {
     terms_body: "Mit der Nutzung von LocalLoop stimmst du zu, lokale Events verantwortungsvoll zu entdecken und zu teilen. Dies ist eine Demo-Version ohne Gewährleistung.",
     privacy_body: "LocalLoop speichert dein Profil, Check-ins und Nachrichten für Karte und Chats. Dein Standort wird nur zum Zentrieren der Karte genutzt und niemals ohne Zustimmung geteilt.",
     explore_title: "Entdecken", no_match: "Keine Events für deine Filter.",
+    onb_choose_role: "Wie nutzt du LocalLoop?", role_visitor: "Ich bin Besucher", role_visitor_desc: "Events entdecken & Leute treffen",
+    role_business: "Veranstalter / Business", role_business_desc: "Deine Location eintragen & Events hosten",
+    onb_your_profile: "Dein Profil", onb_business_profile: "Business-Profil",
+    onb_birthdate: "Geburtsdatum", onb_birthdate_hint: "Wähle dein Geburtsdatum",
+    onb_age_error: "Du musst mindestens 16 sein, um LocalLoop zu nutzen.", onb_name_error: "Bitte gib deinen Namen ein.",
+    onb_biz_error: "Business-Name ist erforderlich.", onb_continue: "Weiter", onb_finish: "Einrichtung abschließen",
+    biz_name: "Business-Name", biz_category: "Kategorie", biz_address: "Adresse", biz_website: "Webseite", biz_instagram: "Instagram",
+    verified: "Verifiziert", reviews: "Bewertungen", reviews_title: "Bewertungen", rate_venue: "Location bewerten",
+    your_rating: "Deine Bewertung", write_review: "Teile deine Erfahrung (optional)", submit_review: "Bewertung senden",
+    no_reviews: "Noch keine Bewertungen — sei der Erste!", review_need_checkin: "Check-in, um zu bewerten", review_thanks: "Danke für deine Bewertung! 🌟",
+    age_restricted_note: "18+ Events sind je nach Alter ausgeblendet",
     host_event: "Event veranstalten", event_banner: "Event-Banner", upload_banner: "Bannerbild hochladen", change_banner: "Banner ändern",
     event_title: "Event-Titel", category: "Kategorie", date: "Datum", time: "Uhrzeit",
     recurring_q: "Wiederkehrendes Event?", repeat_this: "Event wiederholen · Wiederkehrend?",

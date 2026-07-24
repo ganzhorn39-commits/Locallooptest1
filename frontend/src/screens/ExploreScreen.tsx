@@ -8,6 +8,7 @@ import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
+import { isMinor } from "@/src/utils/age";
 import EventCard from "@/src/components/EventCard";
 import SearchFilterBar from "@/src/components/SearchFilterBar";
 import CategoryFilterRow from "@/src/components/CategoryFilterRow";
@@ -48,8 +49,8 @@ export default function ExploreScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = useMemo(
-    () => filterEvents(events, { query, category, quick }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
-    [events, query, category, quick]
+    () => filterEvents(events, { query, category, quick, hideRestricted: isMinor(user?.birthdate) }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
+    [events, query, category, quick, user]
   );
 
   const openEvent = useCallback(async (e: EventItem) => {

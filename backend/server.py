@@ -61,6 +61,8 @@ class EventCreate(BaseModel):
     instagram: str = ""
     website: str = ""
     tickets_url: str = ""
+    reservation_url: str = ""
+    capacity: int = 0  # 0 = unlimited
     latitude: float
     longitude: float
     address: str = ""
@@ -83,11 +85,15 @@ class Event(BaseModel):
     instagram: str = ""
     website: str = ""
     tickets_url: str = ""
+    reservation_url: str = ""
+    capacity: int = 0
     latitude: float
     longitude: float
     address: str = ""
     venue_name: str = ""
     verified: bool = False
+    rating: float = 0.0
+    rating_count: int = 0
     is_recurring: bool = False
     recurrence_freq: str = ""
     recurrence_days: List[int] = []
@@ -142,6 +148,8 @@ async def create_session(req: SessionRequest):
             "email": email,
             "name": data.get("name"),
             "picture": data.get("picture"),
+            "account_type": "user",
+            "onboarded": False,
             "created_at": now_utc().isoformat(),
         })
     session_token = data["session_token"]
@@ -216,6 +224,8 @@ def with_live_count(doc: dict) -> dict:
     jitter = random.randint(0, 18) + (hash(doc["id"]) % 40)
     doc["live_count"] = base + abs(jitter)
     doc["is_hot"] = doc["live_count"] > 45
+    doc["spots_taken"] = base
+    doc["capacity"] = doc.get("capacity", 0)
     if doc.get("is_recurring") and doc.get("recurrence_days"):
         try:
             st = datetime.fromisoformat(doc["start_time"])
@@ -284,11 +294,23 @@ class ProfileUpdate(BaseModel):
     bio: Optional[str] = None
     instagram: Optional[str] = None
     picture: Optional[str] = None
+    birthdate: Optional[str] = None  # ISO date YYYY-MM-DD
+    account_type: Optional[str] = None  # user | business
+    onboarded: Optional[bool] = None
+    business_name: Optional[str] = None
+    business_category: Optional[str] = None
+    business_address: Optional[str] = None
+    business_website: Optional[str] = None
+    business_instagram: Optional[str] = None
 
 
 @api_router.patch("/profile")
 async def update_profile(payload: ProfileUpdate, user=Depends(get_current_user)):
     updates = {k: v for k, v in payload.dict().items() if v is not None}
+    # Business accounts with a completed business profile are auto-verified (demo).
+    merged = {**user, **updates}
+    if merged.get("account_type") == "business" and merged.get("business_name"):
+        updates["verified"] = True
     if updates:
         await db.users.update_one({"user_id": user["user_id"]}, {"$set": updates})
     return await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
@@ -314,6 +336,55 @@ async def participants(event_id: str):
         if u:
             users.append(u)
     return {"count": len(users), "participants": users}
+
+
+# ----------------------------- Reviews / Ratings -----------------------------
+class ReviewCreate(BaseModel):
+    rating: int  # 1..5
+    comment: str = ""
+
+
+async def recompute_rating(event_id: str):
+    ev = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not ev:
+        return
+    # Freeze the seeded reputation as a baseline the first time.
+    if "base_rating" not in ev:
+        base_rating = float(ev.get("rating", 0) or 0)
+        base_count = int(ev.get("rating_count", 0) or 0)
+        await db.events.update_one({"id": event_id}, {"$set": {"base_rating": base_rating, "base_count": base_count}})
+    else:
+        base_rating = float(ev.get("base_rating", 0) or 0)
+        base_count = int(ev.get("base_count", 0) or 0)
+    reviews = await db.reviews.find({"event_id": event_id}, {"_id": 0}).to_list(1000)
+    n = len(reviews)
+    total = base_rating * base_count + sum(r["rating"] for r in reviews)
+    count = base_count + n
+    avg = round(total / count, 1) if count else 0.0
+    await db.events.update_one({"id": event_id}, {"$set": {"rating": avg, "rating_count": count}})
+
+
+@api_router.get("/events/{event_id}/reviews")
+async def get_reviews(event_id: str):
+    docs = await db.reviews.find({"event_id": event_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return docs
+
+
+@api_router.post("/events/{event_id}/reviews")
+async def post_review(event_id: str, payload: ReviewCreate, user=Depends(get_current_user)):
+    await require_attending(event_id, user)
+    rating = max(1, min(5, int(payload.rating)))
+    review = {
+        "id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["user_id"],
+        "user_name": user.get("name") or "Guest", "user_picture": user.get("picture") or "",
+        "rating": rating, "comment": payload.comment.strip(), "created_at": now_utc().isoformat(),
+    }
+    await db.reviews.update_one(
+        {"event_id": event_id, "user_id": user["user_id"]},
+        {"$set": review}, upsert=True,
+    )
+    await recompute_rating(event_id)
+    return {"ok": True, "review": review}
 
 
 # ----------------------------- Group Chat -----------------------------
@@ -628,41 +699,71 @@ _BOARD = "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?crop=entr
 
 # Real Karlsruhe venues (verified business partners) with attached demo events.
 KA_VENUES = [
-    {"venue_name": "DECKZEHN (Rooftop & Beach)", "title": "Sunset Rooftop Beats & Sand", "category": "nightlife", "emoji": "🍹",
+    {"venue_name": "DECKZEHN (Rooftop & Beach)", "title": "Sunset Rooftop Beats & Sand", "category": "rooftop", "emoji": "🍹",
      "description": "Barfuß im Sand über den Dächern von Karlsruhe. Genieße Cocktails, Liegestühle und chillige House-Beats im 10. Stock.",
      "image_url": _ROOFTOP, "instagram": "deckzehn", "website": "https://deckzehn.de", "tickets_url": "",
-     "latitude": 49.0089, "longitude": 8.4069, "address": "Zähringer Str. 69, 76133 Karlsruhe",
+     "latitude": 49.0089, "longitude": 8.4069, "address": "Zähringer Str. 69, 76133 Karlsruhe", "capacity": 120, "rating": 4.8, "rating_count": 214,
      "is_recurring": True, "recurrence_freq": "weekly", "recurrence_days": [3, 5], "recurrence_label": "Every Thursday & Saturday at 18:00", "hour": 18, "minute": 0, "in_days": 0},
-    {"venue_name": "VENUS BAR", "title": "Friday Night Venus Groove", "category": "nightlife", "emoji": "🍸",
+    {"venue_name": "VENUS BAR", "title": "Friday Night Venus Groove", "category": "nightlife", "emoji": "🪩",
      "description": "Die perfekte Mischung aus Bar und Club für ein trendbewusstes Publikum. Cocktails, elektronische Beats und gute Vibes.",
      "image_url": _BAR, "instagram": "venusbar.ka", "website": "", "tickets_url": "",
-     "latitude": 49.0093, "longitude": 8.3992, "address": "Kaiserstraße 134, 76133 Karlsruhe",
+     "latitude": 49.0093, "longitude": 8.3992, "address": "Kaiserstraße 134, 76133 Karlsruhe", "capacity": 200, "rating": 4.5, "rating_count": 168,
      "is_recurring": True, "recurrence_freq": "weekly", "recurrence_days": [4], "recurrence_label": "Every Friday at 20:00", "hour": 20, "minute": 0, "in_days": 0},
     {"venue_name": "Mama's Café • Restaurant", "title": "Acoustic Sunday & Brunch", "category": "food", "emoji": "☕",
      "description": "Enjoy a relaxed brunch accompanied by live acoustic music from local Karlsruhe students.",
      "image_url": _COFFEE, "instagram": "mamas.karlsruhe", "website": "", "tickets_url": "",
-     "latitude": 49.0125, "longitude": 8.4005, "address": "Hans-Thoma-Straße 3, 76133 Karlsruhe",
+     "latitude": 49.0125, "longitude": 8.4005, "address": "Hans-Thoma-Straße 3, 76133 Karlsruhe", "capacity": 60, "rating": 4.7, "rating_count": 92,
      "is_recurring": False, "hour": 11, "minute": 0, "in_days": 2},
     {"venue_name": "drei&zwanzig", "title": "Specialty Coffee Tasting Session", "category": "food", "emoji": "☕",
      "description": "Discover different roasting profiles and get a crash course in barista latte art.",
      "image_url": _COFFEE, "instagram": "dreiundzwanzig", "website": "", "tickets_url": "",
-     "latitude": 49.0105, "longitude": 8.3985, "address": "Blumenstraße 19, 76133 Karlsruhe",
+     "latitude": 49.0105, "longitude": 8.3985, "address": "Blumenstraße 19, 76133 Karlsruhe", "capacity": 20, "rating": 4.9, "rating_count": 47,
      "is_recurring": False, "hour": 15, "minute": 0, "in_days": 1},
-    {"venue_name": "Wilma Wunder", "title": "After-Work Cocktail Night", "category": "food", "emoji": "🍕",
+    {"venue_name": "Wilma Wunder", "title": "After-Work Cocktail Night", "category": "rooftop", "emoji": "🍹",
      "description": "Wind down the work or study day at Marktplatz with 2-for-1 cocktails and chill house beats.",
      "image_url": _REST, "instagram": "wilmawunder.karlsruhe", "website": "", "tickets_url": "",
-     "latitude": 49.0085, "longitude": 8.4038, "address": "Karl-Friedrich-Straße 9, 76133 Karlsruhe",
+     "latitude": 49.0085, "longitude": 8.4038, "address": "Karl-Friedrich-Straße 9, 76133 Karlsruhe", "capacity": 80, "rating": 4.4, "rating_count": 130,
      "is_recurring": False, "hour": 18, "minute": 30, "in_days": 1},
-    {"venue_name": "Bistro Le Renard", "title": "Wine & French Cheese Pairing", "category": "nightlife", "emoji": "🍷",
+    {"venue_name": "Bistro Le Renard", "title": "Wine & French Cheese Pairing", "category": "food", "emoji": "🍷",
      "description": "A cozy evening exploring select regional wines paired with French bistro delicacies.",
      "image_url": _WINE, "instagram": "lerenard.ka", "website": "", "tickets_url": "",
-     "latitude": 49.0080, "longitude": 8.3980, "address": "Waldstraße 60, 76133 Karlsruhe",
+     "latitude": 49.0080, "longitude": 8.3980, "address": "Waldstraße 60, 76133 Karlsruhe", "capacity": 30, "rating": 4.6, "rating_count": 58,
      "is_recurring": False, "hour": 19, "minute": 0, "in_days": 3},
-    {"venue_name": "Café Wohnzimmer", "title": "Cozy Board Game Night", "category": "food", "emoji": "☕",
+    {"venue_name": "Café Wohnzimmer", "title": "Cozy Board Game Night", "category": "gaming", "emoji": "🎮",
      "description": "Bring your friends, grab a craft beer, and challenge others to legendary board game rounds.",
      "image_url": _BOARD, "instagram": "cafewohnzimmer", "website": "", "tickets_url": "",
-     "latitude": 49.0083, "longitude": 8.4111, "address": "Zähringerstraße 72, 76133 Karlsruhe",
+     "latitude": 49.0083, "longitude": 8.4111, "address": "Zähringerstraße 72, 76133 Karlsruhe", "capacity": 40, "rating": 4.7, "rating_count": 73,
      "is_recurring": False, "hour": 19, "minute": 30, "in_days": 2},
+    {"venue_name": "Fitness First Karlsruhe", "title": "Sunrise HIIT Bootcamp", "category": "sports", "emoji": "🏋️",
+     "description": "Kickstart your day with a high-intensity outdoor bootcamp in the Schlossgarten. All levels welcome.",
+     "image_url": "https://images.unsplash.com/photo-1601564350184-9e93c13df688?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "fitnessfirst.ka", "website": "", "tickets_url": "",
+     "latitude": 49.0135, "longitude": 8.4044, "address": "Schlossbezirk 10, 76131 Karlsruhe", "capacity": 25, "rating": 4.8, "rating_count": 61,
+     "is_recurring": True, "recurrence_freq": "weekly", "recurrence_days": [1, 3], "recurrence_label": "Every Tuesday & Thursday at 07:00", "hour": 7, "minute": 0, "in_days": 1},
+    {"venue_name": "ZKM | Center for Art and Media", "title": "Immersive Media Art Night", "category": "arts", "emoji": "🎨",
+     "description": "Late-night access to world-class interactive installations, projections and digital art.",
+     "image_url": "https://images.unsplash.com/photo-1569783721854-33a99b4c0bae?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "zkmkarlsruhe", "website": "https://zkm.de", "tickets_url": "https://zkm.de/tickets",
+     "latitude": 49.0000, "longitude": 8.3835, "address": "Lorenzstraße 19, 76135 Karlsruhe", "capacity": 150, "rating": 4.9, "rating_count": 305,
+     "is_recurring": False, "hour": 20, "minute": 0, "in_days": 4},
+    {"venue_name": "Perfekt Futur (Alter Schlachthof)", "title": "Founders & Tech Networking", "category": "networking", "emoji": "💼",
+     "description": "Meet Karlsruhe's startup scene — founders, developers and investors over drinks and lightning talks.",
+     "image_url": "https://images.unsplash.com/photo-1511578314322-379afb476865?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "perfektfutur", "website": "", "tickets_url": "",
+     "latitude": 49.0158, "longitude": 8.4225, "address": "Alter Schlachthof 39, 76131 Karlsruhe", "capacity": 90, "rating": 4.5, "rating_count": 44,
+     "is_recurring": False, "hour": 18, "minute": 0, "in_days": 3},
+    {"venue_name": "Substage", "title": "Indie Live Concert Night", "category": "music", "emoji": "🎵",
+     "description": "Live indie and alternative bands on one of Karlsruhe's most beloved stages.",
+     "image_url": "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "substage.ka", "website": "https://substage.de", "tickets_url": "https://substage.de/tickets",
+     "latitude": 49.0148, "longitude": 8.4210, "address": "Alter Schlachthof 19, 76131 Karlsruhe", "capacity": 300, "rating": 4.7, "rating_count": 221,
+     "is_recurring": False, "hour": 21, "minute": 0, "in_days": 5},
+    {"venue_name": "Turmberg Trails", "title": "Sunset Hike & Viewpoint", "category": "outdoor", "emoji": "🪵",
+     "description": "Guided evening hike up the Turmberg with panoramic views over the Rhine valley.",
+     "image_url": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "turmberg.trails", "website": "", "tickets_url": "",
+     "latitude": 48.9967, "longitude": 8.4900, "address": "Turmbergstraße, 76227 Karlsruhe", "capacity": 35, "rating": 4.8, "rating_count": 89,
+     "is_recurring": False, "hour": 18, "minute": 30, "in_days": 2},
+    {"venue_name": "Impact Hub Karlsruhe", "title": "UX Design Workshop", "category": "workshops", "emoji": "📚",
+     "description": "Hands-on introduction to product design and prototyping with Figma. Laptops recommended.",
+     "image_url": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?crop=entropy&cs=srgb&fm=jpg&q=85", "instagram": "impacthub.ka", "website": "", "tickets_url": "",
+     "latitude": 49.0091, "longitude": 8.4155, "address": "Rüppurrer Str. 4, 76137 Karlsruhe", "capacity": 22, "rating": 4.6, "rating_count": 38,
+     "is_recurring": False, "hour": 17, "minute": 0, "in_days": 4},
 ]
 
 SEED_MESSAGES = ["Wer ist heute dabei? 🙌", "Bin gegen 20 Uhr da!", "Freu mich drauf 🎉", "Can someone save a spot?", "See you all there!"]
@@ -677,8 +778,16 @@ async def seed_and_index():
     await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
     await db.stories.create_index("expires_at", expireAfterSeconds=0)
     await db.crews.create_index("invite_code")
-    count = await db.events.count_documents({})
-    if count == 0:
+    SEED_VERSION = 2
+    meta = await db.meta.find_one({"key": "seed_version"})
+    current_version = (meta or {}).get("value", 0)
+    if current_version < SEED_VERSION:
+        # Re-seed demo content with the new category scheme / ratings / capacity.
+        await db.events.delete_many({})
+        await db.checkins.delete_many({})
+        await db.messages.delete_many({})
+        await db.stories.delete_many({})
+        await db.saves.delete_many({})
         now = now_utc()
         # seed business owner + mock attendees
         await db.users.update_one({"user_id": "seed_business"}, {"$set": {
@@ -710,6 +819,7 @@ async def seed_and_index():
                     "user_name": name, "user_picture": "", "text": random.choice(SEED_MESSAGES),
                     "created_at": (now + timedelta(minutes=j)).isoformat()})
         logger.info("Seeded %d Karlsruhe venues", len(KA_VENUES))
+        await db.meta.update_one({"key": "seed_version"}, {"$set": {"key": "seed_version", "value": SEED_VERSION}}, upsert=True)
 
 
 @api_router.get("/")

@@ -1,4 +1,5 @@
 import type { EventItem } from "@/src/api/client";
+import { isAgeRestricted } from "@/src/constants/categories";
 
 export type QuickKey = "today" | "free" | "outdoor" | "near";
 
@@ -21,11 +22,12 @@ function haversideKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 
 export function filterEvents(
   events: EventItem[],
-  opts: { query?: string; category?: string; quick?: QuickKey[]; userLoc?: { latitude: number; longitude: number } | null }
+  opts: { query?: string; category?: string; quick?: QuickKey[]; userLoc?: { latitude: number; longitude: number } | null; radiusKm?: number | null; hideRestricted?: boolean }
 ): EventItem[] {
   const q = (opts.query || "").trim().toLowerCase();
   const quick = opts.quick || [];
   return events.filter((e) => {
+    if (opts.hideRestricted && isAgeRestricted(e.category)) return false;
     if (opts.category && opts.category !== "all" && e.category !== opts.category) return false;
     if (q) {
       const hay = `${e.title} ${e.category} ${e.address} ${e.description}`.toLowerCase();
@@ -37,7 +39,7 @@ export function filterEvents(
       if (d.toDateString() !== now.toDateString()) return false;
     }
     if (quick.includes("free") && e.tickets_url) return false;
-    if (quick.includes("outdoor") && !(e.category === "sports")) return false;
+    if (quick.includes("outdoor") && !(e.category === "outdoor" || e.category === "sports")) return false;
     if (quick.includes("near")) {
       if (!opts.userLoc) return false;
       const km = haversideKm(
@@ -45,6 +47,13 @@ export function filterEvents(
         { lat: e.latitude, lng: e.longitude }
       );
       if (km > 5) return false;
+    }
+    if (opts.radiusKm && opts.userLoc) {
+      const km = haversideKm(
+        { lat: opts.userLoc.latitude, lng: opts.userLoc.longitude },
+        { lat: e.latitude, lng: e.longitude }
+      );
+      if (km > opts.radiusKm) return false;
     }
     return true;
   });

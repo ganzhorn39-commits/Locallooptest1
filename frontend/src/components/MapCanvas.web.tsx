@@ -39,7 +39,7 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.35)" }]} />
       {events.map((e) => {
         const meta = categoryMeta(e.category);
-        const color = colors[meta.colorKey];
+        const color = meta.color;
         const p = pos(e.latitude, e.longitude);
         return (
           <Pressable

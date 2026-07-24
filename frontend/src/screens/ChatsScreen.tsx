@@ -75,7 +75,7 @@ export default function ChatsScreen() {
             const meta = categoryMeta(e.category);
             return (
               <Pressable key={e.id} testID={`chat-item-${e.id}`} onPress={() => router.push(`/chat/${e.id}`)} style={[styles.row, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-                <View style={[styles.avatar, { backgroundColor: colors[meta.colorKey] }]}>
+                <View style={[styles.avatar, { backgroundColor: meta.color }]}>
                   <Text style={{ fontSize: 20 }}>{meta.emoji}</Text>
                 </View>
                 <View style={{ flex: 1 }}>

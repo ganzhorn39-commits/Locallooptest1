@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, Platform, Modal } from "react-native";
+import { View, Text, StyleSheet, Pressable, Platform, Modal, TextInput, Share } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -41,7 +41,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
   const { t } = useI18n();
   const router = useRouter();
   const meta = categoryMeta(event.category);
-  const catColor = colors[meta.colorKey];
+  const catColor = meta.color;
 
   const [stories, setStories] = useState<any[]>([]);
   const [participants, setParticipants] = useState(0);
@@ -49,6 +49,11 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
   const [viewing, setViewing] = useState<any | null>(null);
   const [posting, setPosting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [myRating, setMyRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [reviewMsg, setReviewMsg] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const loadSocial = useCallback(async () => {
     try {
@@ -60,7 +65,30 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
     try {
       setSaved((await api.saveStatus(event.id)).saved);
     } catch {}
+    try {
+      setReviews(await api.getReviews(event.id));
+    } catch {}
   }, [event.id]);
+
+  const submitReview = async () => {
+    if (!myRating) return;
+    setSubmittingReview(true);
+    try {
+      await api.postReview(event.id, myRating, comment);
+      setReviewMsg(t("review_thanks"));
+      setComment("");
+      setMyRating(0);
+      await loadSocial();
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {} finally { setSubmittingReview(false); }
+  };
+
+  const shareEvent = async () => {
+    try {
+      const url = event.website || event.tickets_url || "";
+      await Share.share({ message: `${event.title} @ ${event.venue_name || event.address}\n${url}`.trim() });
+    } catch {}
+  };
 
   const toggleSave = async () => {
     setSaved((s) => !s);
@@ -106,10 +134,23 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
             )}
           </View>
           {!!event.venue_name && (
-            <Text style={styles.venueName}>{event.verified ? "✓ " : ""}{event.venue_name}</Text>
+            <View style={styles.venueRow}>
+              {event.verified && <Ionicons name="checkmark-circle" size={15} color="#4DA3FF" />}
+              <Text style={styles.venueName}>{event.venue_name}</Text>
+              {!!event.rating && event.rating > 0 && (
+                <View style={styles.ratingPill} testID="venue-rating">
+                  <Ionicons name="star" size={12} color="#FFD60A" />
+                  <Text style={styles.ratingPillText}>{event.rating.toFixed(1)}</Text>
+                  <Text style={styles.ratingPillCount}>({event.rating_count})</Text>
+                </View>
+              )}
+            </View>
           )}
           <Text style={styles.heroTitle} testID="event-sheet-title">{event.title}</Text>
         </View>
+        <Pressable testID="share-event-button" onPress={shareEvent} style={[styles.saveHero, { right: 62 }]}>
+          <Ionicons name="share-social-outline" size={20} color="#FFFFFF" />
+        </Pressable>
         <Pressable testID="save-event-button" onPress={toggleSave} style={styles.saveHero}>
           <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color="#FFFFFF" />
         </Pressable>
@@ -221,6 +262,55 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
 
         {!!event.description && <Text style={[styles.desc, { color: colors.onSurfaceSecondary }]}>{event.description}</Text>}
 
+        {/* Reviews */}
+        <View style={{ gap: 10 }} testID="reviews-section">
+          <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>{t("reviews_title")} · {reviews.length}</Text>
+          {checkedIn ? (
+            <View style={[styles.reviewCard, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
+              <Text style={[styles.reviewPrompt, { color: colors.onSurface }]}>{t("rate_venue")}</Text>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Pressable key={s} testID={`star-${s}`} onPress={() => setMyRating(s)} hitSlop={6}>
+                    <Ionicons name={s <= myRating ? "star" : "star-outline"} size={28} color="#FFD60A" />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                testID="review-comment"
+                value={comment}
+                onChangeText={setComment}
+                placeholder={t("write_review")}
+                placeholderTextColor={colors.onSurfaceTertiary}
+                style={[styles.reviewInput, { backgroundColor: colors.surfaceSecondary, color: colors.onSurface, borderColor: colors.border }]}
+                multiline
+              />
+              {!!reviewMsg && <Text style={{ color: colors.success, fontWeight: "700", fontSize: 13 }} testID="review-msg">{reviewMsg}</Text>}
+              <Pressable testID="submit-review" onPress={submitReview} disabled={!myRating || submittingReview} style={[styles.reviewSubmit, { backgroundColor: colors.brand, opacity: !myRating || submittingReview ? 0.5 : 1 }]}>
+                <Text style={styles.reviewSubmitText}>{t("submit_review")}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("review_need_checkin")}</Text>
+          )}
+          {reviews.length === 0 ? (
+            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("no_reviews")}</Text>
+          ) : (
+            reviews.map((r) => (
+              <View key={r.id} style={[styles.reviewItem, { borderColor: colors.border }]} testID={`review-${r.id}`}>
+                <View style={styles.reviewItemHead}>
+                  <Text style={[styles.reviewAuthor, { color: colors.onSurface }]}>{r.user_name}</Text>
+                  <View style={{ flexDirection: "row" }}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Ionicons key={s} name={s <= r.rating ? "star" : "star-outline"} size={13} color="#FFD60A" />
+                    ))}
+                  </View>
+                </View>
+                {!!r.comment && <Text style={[styles.reviewComment, { color: colors.onSurfaceSecondary }]}>{r.comment}</Text>}
+              </View>
+            ))
+          )}
+        </View>
+
         <View style={styles.ctaGroup}>
           {!!event.tickets_url && (
             <Pressable testID="cta-tickets" onPress={() => openLink(event.tickets_url)} style={[styles.ctaPrimary, { backgroundColor: colors.brand }]}>
@@ -286,6 +376,20 @@ const styles = StyleSheet.create({
   checkinBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 12, borderWidth: 1 },
   checkinText: { fontSize: 15, fontWeight: "700" },
   venueName: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: "600" },
+  venueRow: { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  ratingPill: { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.45)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  ratingPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
+  ratingPillCount: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: "600" },
+  reviewCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
+  reviewPrompt: { fontSize: 15, fontWeight: "700" },
+  starsRow: { flexDirection: "row", gap: 8 },
+  reviewInput: { minHeight: 44, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingTop: 10, fontSize: 14, textAlignVertical: "top" },
+  reviewSubmit: { height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  reviewSubmitText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  reviewItem: { borderWidth: 1, borderRadius: 12, padding: 12, gap: 4 },
+  reviewItemHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  reviewAuthor: { fontSize: 14, fontWeight: "700" },
+  reviewComment: { fontSize: 14, lineHeight: 20 },
   attendeeRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 8 },
   attendee: { alignItems: "center", width: 52, gap: 4 },
   attendeeAvatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden" },

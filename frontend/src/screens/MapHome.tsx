@@ -13,6 +13,7 @@ import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { DEFAULT_REGION } from "@/src/constants/categories";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
+import { isMinor } from "@/src/utils/age";
 import MapCanvas from "@/src/components/MapCanvas";
 import CategoryFilterRow from "@/src/components/CategoryFilterRow";
 import SearchFilterBar from "@/src/components/SearchFilterBar";
@@ -51,8 +52,8 @@ export default function MapHome() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = useMemo(
-    () => filterEvents(events, { query, category, quick, userLoc }),
-    [events, query, category, quick, userLoc]
+    () => filterEvents(events, { query, category, quick, userLoc, hideRestricted: isMinor(user?.birthdate) }),
+    [events, query, category, quick, userLoc, user]
   );
 
   const requestLocation = useCallback(async () => {

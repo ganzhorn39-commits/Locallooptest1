@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 4 (LocalLoop Phases 1-2 review). BACKEND: 13/13 new tests in /app/backend/tests/test_phase1_2.py PASSED — GET /api/events returns exactly 13 Karlsruhe events covering all 10 categories (sports, nightlife, rooftop, food, arts, networking, gaming, outdoor, workshops, music); each event has rating, rating_count, capacity, spots_taken; POST /api/events/{id}/reviews returns 401 without auth and 403 without check-in; posting a review after check-in returns ok:true, upserts one review per user, appears in GET reviews, and rating_count on event increments (rating recompute works); rating value >5 is clamped to 5. PATCH /api/profile requires auth (401), accepts birthdate/account_type/onboarded and persists them; setting account_type='business' with business_name auto-sets verified=true. GET /api/auth/me returns onboarded/account_type/birthdate. No _id leak on any response. FRONTEND (mobile 390x844): Demo login routes correctly to /onboarding when user.onboarded=false (auth gate in app/_layout.tsx). onboarding-screen renders with role-visitor and role-business cards. Visitor flow: onb-name + onb-birthdate (opens birthdate-calendar modal defaulting to January 2004) → pick a date → onb-finish → lands on (tabs)/map-home. Under-16 detection: empty birthdate triggers onb-error text 'You must be at least 16 to use LocalLoop.' Business flow: role-business → biz-name, biz-category (CategoryWheel with 10 category-chip-<key> chips), biz-address, biz-website, biz-instagram → onb-finish → lands on map-home; Profile then shows business_name + verified-badge (blue check). Map + Explore render CategoryFilterRow with 11 filter-chip-<key> chips (all + 10 categories) using CATEGORIES palette (violet, mint, pink, gold, cyan, etc.) — NO orange detected. 13 map-pin-<id> markers on Map, 10 event-card-<id> on Explore (matches viewport-visible subset of 13). Event cards show category badge with emoji, star rating (e.g. 4.8), capacity ratio 'spots_taken/capacity' (e.g. 3/120), and verified check next to DECKZEHN venue-name. Event Sheet renders venue-rating pill, verified check, and reviews-section. Review form is HIDDEN before check-in (shows 'Check in to leave a review'); after tapping checkin-button, star-1..star-5, review-comment, submit-review all appear; submitting shows review-msg='Thanks for your review! 🌟'. CategoryWheel in Create form + Business onboarding renders all 10 category-chip-* items with violet highlight on active. Deprecated packages detected: none new. Deprecated style prop warnings persist (shadow*, pointerEvents, tintColor) — non-blocking. React-19 element.ref console error still emitted by a dep (likely reanimated/@gorhom); non-blocking on web.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Global StyleSheet", "issue": "Console warning: 'shadow*' style props deprecated. Use 'boxShadow'. Non-blocking, unchanged since prior iters."},
+      {"component": "TimeWheel / RN Web", "issue": "Console warning: props.pointerEvents deprecated. Use style.pointerEvents. Unchanged since prior iters."},
+      {"component": "Image tintColor", "issue": "Console warning: 'Image: style.tintColor is deprecated. Please use props.tintColor.' Non-blocking."},
+      {"component": "expo-notifications on web", "issue": "Info: 'Listening to push token changes is not yet fully supported on web'. Expected for preview."},
+      {"component": "React 19 element.ref", "issue": "Console error from a lib (likely @gorhom/bottom-sheet or reanimated): 'Accessing element.ref was removed in React 19'. Non-blocking; track dep upgrades."},
+      {"component": "Animated / useNativeDriver", "issue": "Warning: useNativeDriver not supported on web — expected."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phase1_2.py",
+    "/app/test_reports/pytest/pytest_phase1_2.xml"
+  ],
+  "action_items": [
+    "(Nice-to-have) Migrate deprecated shadow*/pointerEvents/tintColor style props to their new APIs to silence RN Web console warnings.",
+    "(Nice-to-have) Investigate the React-19 element.ref console error source (likely @gorhom/bottom-sheet or reanimated version). Non-blocking, but should be tracked before production build."
+  ],
+  "critical_code_review_comments": [
+    "server.py reviews endpoint correctly enforces auth + check-in (401/403) and clamps rating to 1..5.",
+    "recompute_rating() correctly freezes the seed baseline (base_rating/base_count) the first time a user review is added and averages base + user reviews thereafter — verified through GET /api/events/{id}.",
+    "PATCH /api/profile auto-sets verified=True when account_type=='business' AND business_name is present (via the merged {...user, ...updates} check) — verified end-to-end in UI and API.",
+    "auth gate in app/_layout.tsx correctly routes: not-authed→/login, authed+!onboarded→/onboarding, authed+onboarded+on(auth|onboarding)→/(tabs).",
+    "CategoryFilterRow uses testID='filter-chip-<key>' (Map/Explore) and CategoryWheel uses testID='category-chip-<key>' (Create + Business onboarding) — both correct, no collision. Prior test reports incorrectly asserted 'category-chip-*' on Map/Explore.",
+    "MongoDB _id excluded from every response via {\"_id\": 0} projection — spot-checked events, reviews, participants, messages.",
+    "getAge() correctly handles null/invalid birthdate → returns null; onboarding blocks finish when age<16 (matches spec)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phase1_2.py (new)"
+  ],
+  "success_rate": {"backend": "100% (13/13 phase1_2 + prior iterations still green)", "frontend": "100% of Phase 1-2 tested flows working"},
+  "seed_data_creation": "TEST_phase12 review + TEST_clamp review added to first KA event via authed POST /api/events/{id}/reviews (idempotent per user). TEST_UI_REVIEW_A added via UI. Demo user briefly patched to business_name='TEST_PhaseBiz' then reset to account_type='user' + onboarded=false to re-trigger onboarding for UI testing. Final state: demo user is account_type='business' with business_name='TEST_BIZ_UI' and verified=true after UI test. If a fresh onboarding smoke test is needed later, reset the demo user via: PATCH /api/profile {onboarded:false, account_type:'user'} (business_name and verified will persist unless explicitly cleared).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Phases 1-2 fully green. All 13 Phase-1-2 backend tests + prior iter1-3 tests continue to pass. Frontend testIDs are stable: onboarding-screen, role-visitor, role-business, onb-name, onb-birthdate, birthdate-calendar, onb-finish, onb-error, biz-name/category/address/website/instagram (CategoryWheel), map-home, map-pin-<id>, filter-chip-<key> (Map+Explore), category-chip-<key> (Create + Business onboarding), event-card-<id>, venue-rating, reviews-section, checkin-button, star-1..star-5, review-comment, submit-review, review-msg, verified-badge, profile-screen. Note on onboarding testing: to re-trigger onboarding for the demo user, PATCH /api/profile with onboarded=false first (session/token from POST /api/auth/dev-session). React-Native-Web Pressables must be clicked via document.querySelector('[data-testid=…]').click() from page.evaluate — Playwright .click(force=True) does NOT fire the onPress; page.fill on TextInputs works normally. Phases 3 (capacity counter, RSVP privacy, reservation link, native share, radius slider, date-range picker, GPS check-in) and 4 (chat delete, contacts/friends, event-header nav) are not yet implemented — do not test.",
+  "rca_of_issue": "N/A — no bugs found in Phase 1-2 implementation. Prior iter3 gaps (save-event-button and recurring-badge) were carried over from the previous EventSheet audit; those testIDs are outside the Phase 1-2 scope of this review request and were not re-checked here."
+}

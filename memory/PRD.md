@@ -57,9 +57,29 @@ An interactive, map-first regional event & community app (Google Maps × Nomadli
 - ✅ Push-notification relay wired (Emergent) — saved-event + new-message triggers
 - ✅ Tested: backend 16/16 pytest; frontend ~all flows passed (save button + recurring badge fixed & verified)
 
-## Backlog / Next (deferred — need integrations / larger scope)
+## Implemented — Feature Round 4: UX Refresh + Design Overhaul (2026-06)
+- ✅ Full-screen Map (removed in-app brand/header bar; only floating search + category chips overlay the map)
+- ✅ Centralized Settings screen (`app/settings.tsx`) via gear icon in Profile: Language, Notifications, Location, Theme, Legal, Logout
+- ✅ Complete DE/EN i18n across ALL screens via `src/i18n` (brand "LocalLoop" + slogan intentionally never translated)
+- ✅ Premium Welcome screen redesign: Unsplash community photo bg + glassmorphic (expo-blur) card with logo/slogan/Google/Facebook/Email
+- ✅ **Design overhaul**: removed all orange; new premium dark palette — primary electric violet (#7C5CFF) + emerald mint accent (#2EE6A6), glassmorphism. Added `accent`/`onAccent` theme keys.
+- ✅ **Expanded to 10 categories** (Sports&Fitness 🏋️, Nightlife&Clubs 🪩, Rooftop&Bar 🍹, Food&Culinary 🍕, Arts&Culture 🎨, Networking 💼, Gaming&E-Sports 🎮, Outdoor&Nature 🪵, Workshops 📚, Music&Concerts 🎵) with embedded neon colors + age-restricted flag on nightlife/rooftop
+- ✅ Interactive horizontal **carousel category picker** (`CategoryWheel.tsx`) in Create form
+- ✅ Backend: 13 Karlsruhe venues re-seeded across all categories; added `capacity`, `rating`, `rating_count`, `reservation_url` to Event; `spots_taken` in live payload; seed-versioning (`db.meta.seed_version`) to force clean re-seed
+
+## In Progress — Big Feature Program (user request, 4 phases; all defaults confirmed)
+- Phase 1 (DONE): design overhaul + 10 categories + wheel picker
+- Phase 2 (TODO): mandatory birthdate onboarding + dynamic age display + U18 nightlife restriction; Business role selection + forced business profile setup + verified blue badge + star rating on profile/sheet/cards + user review system (attendees only)
+- Phase 3 (TODO): event capacity + live "X/Y spots" counter, RSVP privacy (Public/Friends/Anonymous), reservation link field, native share button, distance radius filter (1/5/15 km), calendar date-range picker (Explore + Map), live GPS "At Venue" check-in + green Live badge
+- Phase 4 (TODO): chat delete/leave, "My Contacts" friends (search/request/1-on-1 DM), event-header → event details navigation
+
+## Design decisions (confirmed by user)
+- Business login = role choice on login (Visitor / Organizer-Business) → forced business profile; verified badge auto/admin-granted for demo
+- Palette = electric violet primary + emerald mint accent (dark, glassmorphism, NO orange)
+- Reviews allowed for checked-in attendees only
+- Re-seed demo data allowed
+
+## Backlog / Next (deferred)
 - **P0**: Facebook OAuth login (needs Facebook integration); Email OTP login (needs email provider e.g. Resend/SendGrid)
-- **P0**: Business vs Regular account-type split + "Create Your Profile" forced onboarding + business-only Create access (backend `account_type` field already seeded)
-- **P1**: Full DE/EN i18n across all screens (currently on Welcome only)
-- **P1**: Push delivery verification (requires google-services.json + native build); scheduled "starts in 2h" reminder via a server scheduler
-- **P2**: Viewport-only pin rendering; short video Moments (object storage)
+- **P1**: Push delivery verification (requires google-services.json + native build)
+

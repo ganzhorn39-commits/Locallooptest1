@@ -30,6 +30,11 @@ export type EventItem = {
   instagram: string;
   website: string;
   tickets_url: string;
+  reservation_url?: string;
+  capacity?: number;
+  spots_taken?: number;
+  rating?: number;
+  rating_count?: number;
   latitude: number;
   longitude: number;
   address: string;
@@ -71,6 +76,11 @@ export const api = {
 
   // Profile
   updateProfile: (payload: any) => req(`/profile`, { method: "PATCH", body: JSON.stringify(payload) }),
+
+  // Reviews / ratings
+  getReviews: (id: string): Promise<any[]> => req(`/events/${id}/reviews`),
+  postReview: (id: string, rating: number, comment: string) =>
+    req(`/events/${id}/reviews`, { method: "POST", body: JSON.stringify({ rating, comment }) }),
 
   // Chat
   getMessages: (id: string): Promise<any[]> => req(`/events/${id}/messages`),

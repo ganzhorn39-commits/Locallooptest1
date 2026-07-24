@@ -21,7 +21,7 @@ export default function EventCard({
 }) {
   const { colors } = useTheme();
   const meta = categoryMeta(event.category);
-  const catColor = colors[meta.colorKey];
+  const catColor = meta.color;
 
   return (
     <Pressable testID={`event-card-${event.id}`} onPress={onPress} style={[styles.card, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
@@ -47,15 +47,27 @@ export default function EventCard({
       <View style={styles.info}>
         <Text style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{event.title}</Text>
         {!!event.venue_name && (
-          <Text style={[styles.venue, { color: colors.onSurfaceTertiary }]} numberOfLines={1}>
-            {event.verified ? "✓ " : ""}{event.venue_name}
-          </Text>
+          <View style={styles.venueRow}>
+            {event.verified && <Ionicons name="checkmark-circle" size={14} color="#4DA3FF" />}
+            <Text style={[styles.venue, { color: colors.onSurfaceTertiary }]} numberOfLines={1}>{event.venue_name}</Text>
+            {!!event.rating && event.rating > 0 && (
+              <View style={styles.cardRating}>
+                <Ionicons name="star" size={12} color="#FFD60A" />
+                <Text style={[styles.cardRatingText, { color: colors.onSurface }]}>{event.rating.toFixed(1)}</Text>
+              </View>
+            )}
+          </View>
         )}
         <View style={styles.metaRow}>
           <Ionicons name={event.is_recurring ? "repeat" : "time-outline"} size={14} color={colors.brand} />
           <Text style={[styles.countdown, { color: colors.brand }]} numberOfLines={1}>
             {event.is_recurring && event.recurrence_label ? event.recurrence_label : countdown(event.next_occurrence || event.start_time)}
           </Text>
+          {!!event.capacity && event.capacity > 0 && (
+            <Text style={[styles.spots, { color: (event.spots_taken || 0) >= event.capacity ? colors.error : colors.onSurfaceTertiary }]} numberOfLines={1}>
+              · {(event.spots_taken || 0) >= event.capacity ? "Sold Out" : `${event.spots_taken || 0}/${event.capacity}`}
+            </Text>
+          )}
         </View>
       </View>
     </Pressable>
@@ -74,6 +86,10 @@ const styles = StyleSheet.create({
   info: { padding: 14, gap: 6 },
   title: { fontSize: 17, fontWeight: "800", letterSpacing: -0.3 },
   venue: { fontSize: 13, fontWeight: "600" },
+  venueRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  cardRating: { flexDirection: "row", alignItems: "center", gap: 2, marginLeft: "auto" },
+  cardRatingText: { fontSize: 13, fontWeight: "800" },
+  spots: { fontSize: 13, fontWeight: "700" },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   countdown: { fontSize: 13, fontWeight: "700" },
   dot: { fontSize: 13, marginHorizontal: 2 },

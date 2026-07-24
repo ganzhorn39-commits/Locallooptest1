@@ -10,6 +10,7 @@ import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { api } from "@/src/api/client";
+import { getAge } from "@/src/utils/age";
 import { pickImage } from "@/src/utils/pickImage";
 
 export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
@@ -62,6 +63,25 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
             <View style={[styles.avatarEdit, { backgroundColor: colors.brand }]}><Ionicons name="camera" size={16} color="#FFFFFF" /></View>
           </Pressable>
           <Text style={[styles.email, { color: colors.onSurfaceTertiary }]}>{user?.email}</Text>
+          {(() => {
+            const age = getAge((user as any)?.birthdate);
+            const isBiz = (user as any)?.account_type === "business";
+            const verified = (user as any)?.verified;
+            const displayName = isBiz ? ((user as any)?.business_name || user?.name) : user?.name;
+            return (
+              <View style={styles.identityRow}>
+                <Text style={[styles.identityName, { color: colors.onSurface }]}>
+                  {displayName}{!isBiz && age !== null ? `, ${age}` : ""}
+                </Text>
+                {isBiz && verified && (
+                  <View testID="verified-badge" style={styles.verifiedWrap}>
+                    <Ionicons name="checkmark-circle" size={18} color={colors.brand} />
+                    <Text style={[styles.verifiedText, { color: colors.brand }]}>{t("verified")}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
         </View>
 
         <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("display_name")}</Text>
@@ -91,6 +111,10 @@ const styles = StyleSheet.create({
   avatarImg: { width: "100%", height: "100%", borderRadius: 55 },
   avatarEdit: { position: "absolute", bottom: 0, right: 0, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#FFFFFF" },
   email: { fontSize: 14 },
+  identityRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  identityName: { fontSize: 20, fontWeight: "800" },
+  verifiedWrap: { flexDirection: "row", alignItems: "center", gap: 3 },
+  verifiedText: { fontSize: 12, fontWeight: "700" },
   label: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 6 },
   input: { minHeight: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
   save: { height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 16 },

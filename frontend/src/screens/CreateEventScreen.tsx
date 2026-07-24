@@ -9,8 +9,9 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { useI18n } from "@/src/i18n";
 import { api } from "@/src/api/client";
-import { CATEGORIES, DEFAULT_REGION, CategoryKey } from "@/src/constants/categories";
+import { DEFAULT_REGION, CategoryKey } from "@/src/constants/categories";
 import LocationPicker from "@/src/components/LocationPicker";
+import CategoryWheel from "@/src/components/CategoryWheel";
 import TimeWheel from "@/src/components/TimeWheel";
 import { pickImage } from "@/src/utils/pickImage";
 
@@ -23,9 +24,15 @@ const FREQS: { key: string; label: string }[] = [
 
 const CATEGORY_IMAGES: Record<string, string> = {
   nightlife: "https://images.unsplash.com/photo-1630395822970-acd6a691d97e?crop=entropy&cs=srgb&fm=jpg&q=85",
+  rooftop: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?crop=entropy&cs=srgb&fm=jpg&q=85",
   food: "https://images.unsplash.com/photo-1551883738-19ffa3dc4c43?crop=entropy&cs=srgb&fm=jpg&q=85",
   sports: "https://images.unsplash.com/photo-1601564350184-9e93c13df688?crop=entropy&cs=srgb&fm=jpg&q=85",
-  culture: "https://images.unsplash.com/photo-1569783721854-33a99b4c0bae?crop=entropy&cs=srgb&fm=jpg&q=85",
+  arts: "https://images.unsplash.com/photo-1569783721854-33a99b4c0bae?crop=entropy&cs=srgb&fm=jpg&q=85",
+  networking: "https://images.unsplash.com/photo-1511578314322-379afb476865?crop=entropy&cs=srgb&fm=jpg&q=85",
+  gaming: "https://images.unsplash.com/photo-1542751371-adc38448a05e?crop=entropy&cs=srgb&fm=jpg&q=85",
+  outdoor: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?crop=entropy&cs=srgb&fm=jpg&q=85",
+  workshops: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?crop=entropy&cs=srgb&fm=jpg&q=85",
+  music: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?crop=entropy&cs=srgb&fm=jpg&q=85",
 };
 
 function fmtDate(iso: string) {
@@ -67,7 +74,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
 
   const submit = async () => {
     Keyboard.dismiss();
-    if (!title.trim()) { setError("Event title is required"); return; }
+    if (!title.trim()) { setError(t("title_required")); return; }
     setError(""); setSubmitting(true);
     try {
       const when = new Date(dateISO + "T00:00:00");
@@ -90,7 +97,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
       onDone();
     } catch {
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError("Could not create event. Please try again.");
+      setError(t("create_failed"));
     } finally { setSubmitting(false); }
   };
 
@@ -104,7 +111,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
             <Ionicons name="close" size={26} color={colors.onSurface} />
           </Pressable>
         ) : <View style={{ width: 26 }} />}
-        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Host an Event</Text>
+        <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{t("host_event")}</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -120,22 +127,11 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
         </Field>
 
         <Field label={t("event_title")} colors={colors}>
-          <TextInput testID="input-title" value={title} onChangeText={setTitle} placeholder="e.g. Rooftop Summer Party" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
+          <TextInput testID="input-title" value={title} onChangeText={setTitle} placeholder={t("event_title")} placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
         <Field label={t("category")} colors={colors}>
-          <View style={styles.catRow}>
-            {CATEGORIES.map((c) => {
-              const active = category === c.key; const col = colors[c.colorKey];
-              return (
-                <Pressable key={c.key} testID={`category-chip-${c.key}`} onPress={() => setCategory(c.key)}
-                  style={[styles.catChip, { backgroundColor: active ? col : colors.surfaceTertiary, borderColor: active ? col : colors.border }]}>
-                  <Text style={{ fontSize: 14 }}>{c.emoji}</Text>
-                  <Text style={[styles.catChipText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{c.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <CategoryWheel value={category} onChange={setCategory} />
         </Field>
 
         <Field label={t("date")} colors={colors}>
@@ -183,24 +179,24 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
           )}
         </Field>
 
-        <Field label="Location" colors={colors}>
+        <Field label={t("location")} colors={colors}>
           <LocationPicker coord={coord} onChange={setCoord} />
-          <TextInput testID="input-address" value={address} onChangeText={setAddress} placeholder="Venue name / address (optional)" placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { marginTop: 8 }]} />
+          <TextInput testID="input-address" value={address} onChangeText={setAddress} placeholder={t("venue_ph")} placeholderTextColor={colors.onSurfaceTertiary} style={[inputStyle, { marginTop: 8 }]} />
         </Field>
 
-        <Field label="Description" colors={colors}>
-          <TextInput testID="input-description" value={description} onChangeText={setDescription} placeholder="What's happening?" placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 90, textAlignVertical: "top", paddingTop: 12 }]} />
+        <Field label={t("description")} colors={colors}>
+          <TextInput testID="input-description" value={description} onChangeText={setDescription} placeholder={t("whats_happening")} placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 90, textAlignVertical: "top", paddingTop: 12 }]} />
         </Field>
 
-        <Field label="Instagram Handle" colors={colors}>
+        <Field label={t("ig_handle")} colors={colors}>
           <TextInput testID="input-instagram" value={instagram} onChangeText={setInstagram} placeholder="@yourvenue" autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
-        <Field label="Website / Homepage" colors={colors}>
+        <Field label={t("website")} colors={colors}>
           <TextInput testID="input-website" value={website} onChangeText={setWebsite} placeholder="https://..." autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
-        <Field label="Ticket Link" colors={colors}>
+        <Field label={t("ticket_link")} colors={colors}>
           <TextInput testID="input-tickets" value={tickets} onChangeText={setTickets} placeholder="https://tickets..." autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
@@ -210,7 +206,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
       <KeyboardStickyView>
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <Pressable testID="submit-event" onPress={submit} disabled={submitting} style={[styles.submit, { backgroundColor: colors.brand, opacity: submitting ? 0.7 : 1 }]}>
-            {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Publish Event</Text>}
+            {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{t("publish")}</Text>}
           </Pressable>
         </View>
       </KeyboardStickyView>
