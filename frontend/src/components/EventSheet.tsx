@@ -17,9 +17,20 @@ import { countdown } from "@/src/utils/filters";
 type Props = {
   event: EventItem;
   checkedIn: boolean;
-  onCheckin: () => void;
+  onCheckin: (visibility?: string, atVenue?: boolean) => void;
   bottomInset: number;
+  userLoc?: { latitude: number; longitude: number } | null;
 };
+
+function distanceKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const R = 6371;
+  const dLat = ((b.latitude - a.latitude) * Math.PI) / 180;
+  const dLng = ((b.longitude - a.longitude) * Math.PI) / 180;
+  const la1 = (a.latitude * Math.PI) / 180;
+  const la2 = (b.latitude * Math.PI) / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
 
 function formatDate(iso: string) {
   try {
@@ -36,12 +47,18 @@ const openLink = async (url: string) => {
   try { await WebBrowser.openBrowserAsync(url); } catch {}
 };
 
-export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }: Props) {
+export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, userLoc }: Props) {
   const { colors } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
   const meta = categoryMeta(event.category);
   const catColor = meta.color;
+  const [showRsvp, setShowRsvp] = useState(false);
+
+  const atVenue = !!userLoc && distanceKm(userLoc, { latitude: event.latitude, longitude: event.longitude }) < 0.2;
+  const capacity = event.capacity || 0;
+  const taken = event.spots_taken || 0;
+  const soldOut = capacity > 0 && taken >= capacity;
 
   const [stories, setStories] = useState<any[]>([]);
   const [participants, setParticipants] = useState(0);
@@ -180,19 +197,31 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
           <View style={styles.liveDot} />
           <Text style={[styles.liveCount, { color: colors.onBrandTertiary }]} testID="event-live-count">{event.live_count}</Text>
           <Text style={[styles.liveLabel, { color: colors.onBrandTertiary }]}>{t("heading_now")}</Text>
-          {participants > 0 && (
-            <Text style={[styles.liveLabel, { color: colors.onBrandTertiary, marginLeft: "auto" }]}>{participants} {t("checked_in")}</Text>
+          {capacity > 0 && (
+            <Text style={[styles.liveLabel, { color: soldOut ? colors.error : colors.onBrandTertiary, marginLeft: "auto", fontWeight: "800" }]} testID="capacity-counter">
+              {soldOut ? t("sold_out") : `${taken}/${capacity}`}
+            </Text>
           )}
         </View>
 
         <Pressable
           testID="checkin-button"
-          onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onCheckin(); }}
-          style={[styles.checkinBtn, { backgroundColor: checkedIn ? colors.success : colors.surfaceTertiary, borderColor: checkedIn ? colors.success : colors.border }]}
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            if (checkedIn) { onCheckin(); return; }
+            if (soldOut) return;
+            setShowRsvp(true);
+          }}
+          disabled={soldOut && !checkedIn}
+          style={[styles.checkinBtn, {
+            backgroundColor: checkedIn ? colors.success : soldOut ? colors.surfaceTertiary : atVenue ? colors.accent : colors.surfaceTertiary,
+            borderColor: checkedIn ? colors.success : atVenue ? colors.accent : colors.border,
+            opacity: soldOut && !checkedIn ? 0.5 : 1,
+          }]}
         >
-          <Ionicons name={checkedIn ? "checkmark-circle" : "add-circle-outline"} size={20} color={checkedIn ? "#FFFFFF" : colors.onSurface} />
-          <Text style={[styles.checkinText, { color: checkedIn ? "#FFFFFF" : colors.onSurface }]}>
-            {checkedIn ? t("going") : t("checkin_cta")}
+          <Ionicons name={checkedIn ? "checkmark-circle" : atVenue ? "location" : "add-circle-outline"} size={20} color={checkedIn ? "#FFFFFF" : atVenue ? colors.onAccent : colors.onSurface} />
+          <Text style={[styles.checkinText, { color: checkedIn ? "#FFFFFF" : atVenue ? colors.onAccent : colors.onSurface }]}>
+            {checkedIn ? t("going") : soldOut ? t("sold_out") : atVenue ? `${t("at_venue")} · ${t("checkin_cta")}` : t("checkin_cta")}
           </Text>
         </Pressable>
 
@@ -203,14 +232,15 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
             <View style={styles.attendeeRow}>
               {attendeeList.slice(0, 8).map((a) => (
                 <View key={a.user_id} style={styles.attendee}>
-                  <View style={[styles.attendeeAvatar, { backgroundColor: colors.surfaceTertiary, borderColor: catColor }]}>
+                  <View style={[styles.attendeeAvatar, { backgroundColor: colors.surfaceTertiary, borderColor: a.live ? colors.accent : catColor }]}>
                     {a.picture ? (
                       <Image source={{ uri: a.picture }} style={styles.attendeeImg} contentFit="cover" />
                     ) : (
                       <Text style={[styles.attendeeInitial, { color: colors.onSurface }]}>{(a.name || "?").charAt(0).toUpperCase()}</Text>
                     )}
+                    {a.live && <View style={[styles.liveBadge, { backgroundColor: colors.accent, borderColor: colors.surfaceSecondary }]} />}
                   </View>
-                  <Text style={[styles.attendeeName, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>{(a.name || "Guest").split(" ")[0]}</Text>
+                  <Text style={[styles.attendeeName, { color: a.live ? colors.accent : colors.onSurfaceSecondary }]} numberOfLines={1}>{a.live ? t("live_badge") : (a.name || "Guest").split(" ")[0]}</Text>
                 </View>
               ))}
             </View>
@@ -318,6 +348,12 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
               <Text style={styles.ctaPrimaryText}>{t("buy_tickets")}</Text>
             </Pressable>
           )}
+          {!!event.reservation_url && (
+            <Pressable testID="cta-reservation" onPress={() => openLink(event.reservation_url!)} style={[styles.ctaPrimary, { backgroundColor: colors.accent }]}>
+              <Ionicons name="restaurant-outline" size={18} color={colors.onAccent} />
+              <Text style={[styles.ctaPrimaryText, { color: colors.onAccent }]}>{t("reserve")}</Text>
+            </Pressable>
+          )}
           <View style={styles.ctaRow}>
             {!!instaUrl && (
               <Pressable testID="cta-instagram" onPress={() => openLink(instaUrl)} style={[styles.ctaSecondary, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
@@ -334,6 +370,34 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset }:
           </View>
         </View>
       </View>
+
+      {/* RSVP privacy selector */}
+      <Modal visible={showRsvp} transparent animationType="fade" onRequestClose={() => setShowRsvp(false)}>
+        <Pressable style={styles.rsvpBg} onPress={() => setShowRsvp(false)} testID="rsvp-backdrop">
+          <Pressable style={[styles.rsvpCard, { backgroundColor: colors.surfaceSecondary }]}>
+            <Text style={[styles.rsvpTitle, { color: colors.onSurface }]}>{t("rsvp_title")}</Text>
+            {([
+              { key: "public", icon: "earth", label: t("rsvp_public"), desc: t("rsvp_public_desc") },
+              { key: "friends", icon: "people", label: t("rsvp_friends"), desc: t("rsvp_friends_desc") },
+              { key: "anonymous", icon: "eye-off", label: t("rsvp_anon"), desc: t("rsvp_anon_desc") },
+            ] as const).map((o) => (
+              <Pressable
+                key={o.key}
+                testID={`rsvp-${o.key}`}
+                onPress={() => { setShowRsvp(false); onCheckin(o.key, atVenue); }}
+                style={[styles.rsvpOption, { borderColor: colors.border, backgroundColor: colors.surfaceTertiary }]}
+              >
+                <Ionicons name={o.icon as any} size={22} color={colors.brand} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rsvpLabel, { color: colors.onSurface }]}>{o.label}</Text>
+                  <Text style={[styles.rsvpDesc, { color: colors.onSurfaceTertiary }]}>{o.desc}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Story viewer */}
       <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
@@ -390,6 +454,13 @@ const styles = StyleSheet.create({
   reviewItemHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   reviewAuthor: { fontSize: 14, fontWeight: "700" },
   reviewComment: { fontSize: 14, lineHeight: 20 },
+  liveBadge: { position: "absolute", bottom: 0, right: 0, width: 13, height: 13, borderRadius: 7, borderWidth: 2 },
+  rsvpBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  rsvpCard: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34, gap: 12 },
+  rsvpTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
+  rsvpOption: { flexDirection: "row", alignItems: "center", gap: 14, padding: 14, borderRadius: 14, borderWidth: 1 },
+  rsvpLabel: { fontSize: 15, fontWeight: "700" },
+  rsvpDesc: { fontSize: 12, marginTop: 2 },
   attendeeRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 8 },
   attendee: { alignItems: "center", width: 52, gap: 4 },
   attendeeAvatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", overflow: "hidden" },

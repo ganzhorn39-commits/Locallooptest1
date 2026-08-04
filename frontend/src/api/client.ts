@@ -57,8 +57,8 @@ export const api = {
   getEvent: (id: string): Promise<EventItem> => req(`/events/${id}`),
   createEvent: (payload: any): Promise<EventItem> =>
     req(`/events`, { method: "POST", body: JSON.stringify(payload) }),
-  checkin: (id: string): Promise<EventItem & { checked_in: boolean }> =>
-    req(`/events/${id}/checkin`, { method: "POST" }),
+  checkin: (id: string, body?: { visibility?: string; at_venue?: boolean }): Promise<EventItem & { checked_in: boolean }> =>
+    req(`/events/${id}/checkin`, { method: "POST", body: JSON.stringify(body || {}) }),
   checkinStatus: (id: string): Promise<{ checked_in: boolean }> =>
     req(`/events/${id}/checkin-status`),
   participants: (id: string): Promise<{ count: number; participants: any[] }> =>

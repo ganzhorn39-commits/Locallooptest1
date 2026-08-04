@@ -60,10 +60,10 @@ export default function ExploreScreen() {
     try { setCheckedIn((await api.checkinStatus(e.id)).checked_in); } catch {}
   }, []);
 
-  const onCheckin = useCallback(async () => {
+  const onCheckin = useCallback(async (visibility?: string, atVenue?: boolean) => {
     if (!selected) return;
     try {
-      const res = await api.checkin(selected.id);
+      const res = await api.checkin(selected.id, { visibility, at_venue: atVenue });
       setCheckedIn(res.checked_in);
       setSelected(res);
       setEvents((prev) => prev.map((ev) => (ev.id === res.id ? res : ev)));

@@ -56,6 +56,8 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
   const [instagram, setInstagram] = useState("");
   const [website, setWebsite] = useState("");
   const [tickets, setTickets] = useState("");
+  const [reservation, setReservation] = useState("");
+  const [capacity, setCapacity] = useState("");
   const [address, setAddress] = useState("");
   const [coord, setCoord] = useState({ latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude });
   const [banner, setBanner] = useState("");
@@ -88,6 +90,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
         description: description.trim(),
         image_url: banner || CATEGORY_IMAGES[category], banner_url: banner || CATEGORY_IMAGES[category],
         instagram: instagram.trim(), website: website.trim(), tickets_url: tickets.trim(),
+        reservation_url: reservation.trim(), capacity: parseInt(capacity, 10) || 0,
         latitude: coord.latitude, longitude: coord.longitude, address: address.trim(),
         is_recurring: isRecurring && days.length > 0, recurrence_freq: freq,
         recurrence_days: isRecurring ? days : [], recurrence_label: recLabel,
@@ -198,6 +201,14 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
 
         <Field label={t("ticket_link")} colors={colors}>
           <TextInput testID="input-tickets" value={tickets} onChangeText={setTickets} placeholder="https://tickets..." autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
+        </Field>
+
+        <Field label={t("reservation_link")} colors={colors}>
+          <TextInput testID="input-reservation" value={reservation} onChangeText={setReservation} placeholder="https://reserve..." autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
+        </Field>
+
+        <Field label={t("capacity_label")} colors={colors}>
+          <TextInput testID="input-capacity" value={capacity} onChangeText={(v) => setCapacity(v.replace(/[^0-9]/g, ""))} placeholder="0 = unlimited" keyboardType="number-pad" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
         {!!error && <Text style={[styles.error, { color: colors.error }]} testID="form-error">{error}</Text>}

@@ -22,13 +22,18 @@ function haversideKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
 
 export function filterEvents(
   events: EventItem[],
-  opts: { query?: string; category?: string; quick?: QuickKey[]; userLoc?: { latitude: number; longitude: number } | null; radiusKm?: number | null; hideRestricted?: boolean }
+  opts: { query?: string; category?: string; quick?: QuickKey[]; userLoc?: { latitude: number; longitude: number } | null; radiusKm?: number | null; hideRestricted?: boolean; dateStart?: string | null; dateEnd?: string | null }
 ): EventItem[] {
   const q = (opts.query || "").trim().toLowerCase();
   const quick = opts.quick || [];
   return events.filter((e) => {
     if (opts.hideRestricted && isAgeRestricted(e.category)) return false;
     if (opts.category && opts.category !== "all" && e.category !== opts.category) return false;
+    if (opts.dateStart) {
+      const day = new Date(e.start_time).toISOString().slice(0, 10);
+      const end = opts.dateEnd || opts.dateStart;
+      if (day < opts.dateStart || day > end) return false;
+    }
     if (q) {
       const hay = `${e.title} ${e.category} ${e.address} ${e.description}`.toLowerCase();
       if (!hay.includes(q)) return false;

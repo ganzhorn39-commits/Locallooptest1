@@ -84,10 +84,10 @@ export default function MapHome() {
     }
   }, [user]);
 
-  const onCheckin = useCallback(async () => {
+  const onCheckin = useCallback(async (visibility?: string, atVenue?: boolean) => {
     if (!selected) return;
     try {
-      const res = await api.checkin(selected.id);
+      const res = await api.checkin(selected.id, { visibility, at_venue: atVenue });
       setCheckedIn(res.checked_in);
       setSelected(res);
       setEvents((prev) => prev.map((ev) => (ev.id === res.id ? res : ev)));
@@ -165,7 +165,7 @@ export default function MapHome() {
         backgroundStyle={{ backgroundColor: colors.surfaceSecondary }}
       >
         {selected && (
-          <EventSheet event={selected} checkedIn={checkedIn} onCheckin={onCheckin} bottomInset={insets.bottom} />
+          <EventSheet event={selected} checkedIn={checkedIn} onCheckin={onCheckin} bottomInset={insets.bottom} userLoc={userLoc} />
         )}
       </BottomSheet>
     </View>

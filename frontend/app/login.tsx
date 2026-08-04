@@ -10,7 +10,7 @@ import { useI18n } from "@/src/i18n";
 
 // BRANDING EXCEPTION: name + slogan are never translated.
 const BRAND = "LocalLoop";
-const SLOGAN = "The city's pulse. Live on your map.";
+const SLOGAN = "Dein Stadtpuls. Live auf der Karte.";
 const BG_URI =
   "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=80";
 
@@ -64,7 +64,7 @@ export default function Login() {
 
             <Pressable testID="email-login-button" onPress={() => setNote(t("soon"))} style={[styles.btn, styles.emailBtn]}>
               <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.emailText}>{t("email")}</Text>
+              <Text style={styles.emailText}>Email OTP</Text>
             </Pressable>
 
             {allowDev && (
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 20, justifyContent: "space-between" },
   brandHead: { alignItems: "center", marginTop: 24 },
   logoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logoBadge: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(75,46,219,0.9)", alignItems: "center", justifyContent: "center" },
+  logoBadge: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(31,176,208,0.92)", alignItems: "center", justifyContent: "center" },
   wordmark: { color: "#FFFFFF", fontSize: 40, fontWeight: "900", letterSpacing: -1 },
   glass: {
     borderRadius: 28, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",

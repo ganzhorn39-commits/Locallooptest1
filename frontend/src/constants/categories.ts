@@ -20,16 +20,16 @@ export type CategoryMeta = {
 };
 
 export const CATEGORIES: CategoryMeta[] = [
-  { key: "sports", label: "Sports & Fitness", color: "#FF4D6D", icon: "barbell", emoji: "🏋️" },
-  { key: "nightlife", label: "Nightlife & Clubs", color: "#B15CFF", icon: "disc", emoji: "🪩", nightlife: true },
+  { key: "sports", label: "Sports & Fitness", color: "#FF5A79", icon: "barbell", emoji: "🏋️" },
+  { key: "nightlife", label: "Nightlife & Clubs", color: "#4C7DFF", icon: "disc", emoji: "🪩", nightlife: true },
   { key: "rooftop", label: "Rooftop & Bar", color: "#FF7EB6", icon: "wine", emoji: "🍹", nightlife: true },
-  { key: "food", label: "Food & Culinary", color: "#F4C242", icon: "restaurant", emoji: "🍕" },
+  { key: "food", label: "Food & Culinary", color: "#F2C14E", icon: "restaurant", emoji: "🍕" },
   { key: "arts", label: "Arts & Culture", color: "#F45CD6", icon: "color-palette", emoji: "🎨" },
-  { key: "networking", label: "Networking", color: "#5B8CFF", icon: "briefcase", emoji: "💼" },
+  { key: "networking", label: "Networking", color: "#3AA0FF", icon: "briefcase", emoji: "💼" },
   { key: "gaming", label: "Gaming & E-Sports", color: "#22D3EE", icon: "game-controller", emoji: "🎮" },
   { key: "outdoor", label: "Outdoor & Nature", color: "#34D399", icon: "leaf", emoji: "🪵" },
-  { key: "workshops", label: "Workshops", color: "#8B95FF", icon: "book", emoji: "📚" },
-  { key: "music", label: "Music & Concerts", color: "#C084FC", icon: "musical-notes", emoji: "🎵" },
+  { key: "workshops", label: "Workshops", color: "#56CCF2", icon: "book", emoji: "📚" },
+  { key: "music", label: "Music & Concerts", color: "#2DD4BF", icon: "musical-notes", emoji: "🎵" },
 ];
 
 const FALLBACK: CategoryMeta = CATEGORIES[0];

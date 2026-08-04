@@ -262,8 +262,13 @@ async def create_event(payload: EventCreate, user=Depends(get_current_user)):
     return with_live_count(event.dict())
 
 
+class CheckinBody(BaseModel):
+    visibility: str = "public"  # public | friends | anonymous
+    at_venue: bool = False
+
+
 @api_router.post("/events/{event_id}/checkin")
-async def checkin(event_id: str, user=Depends(get_current_user)):
+async def checkin(event_id: str, body: CheckinBody = CheckinBody(), user=Depends(get_current_user)):
     doc = await db.events.find_one({"id": event_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -273,7 +278,16 @@ async def checkin(event_id: str, user=Depends(get_current_user)):
         await db.events.update_one({"id": event_id}, {"$inc": {"checkins": -1}})
         checked_in = False
     else:
-        await db.checkins.insert_one({"event_id": event_id, "user_id": user["user_id"], "at": now_utc().isoformat()})
+        capacity = int(doc.get("capacity", 0) or 0)
+        if capacity > 0:
+            current = await db.checkins.count_documents({"event_id": event_id})
+            if current >= capacity:
+                raise HTTPException(status_code=409, detail="Event is full")
+        vis = body.visibility if body.visibility in ("public", "friends", "anonymous") else "public"
+        await db.checkins.insert_one({
+            "event_id": event_id, "user_id": user["user_id"], "at": now_utc().isoformat(),
+            "visibility": vis, "at_venue": bool(body.at_venue),
+        })
         await db.events.update_one({"id": event_id}, {"$inc": {"checkins": 1}})
         checked_in = True
     updated = await db.events.find_one({"id": event_id}, {"_id": 0})
@@ -328,14 +342,23 @@ async def require_attending(event_id: str, user: dict):
 
 
 @api_router.get("/events/{event_id}/participants")
-async def participants(event_id: str):
+async def participants(event_id: str, user=Depends(get_current_user)):
     docs = await db.checkins.find({"event_id": event_id}).to_list(500)
     users = []
+    requester = user["user_id"]
     for d in docs:
+        vis = d.get("visibility", "public")
+        # Anonymous: counted but never listed. Friends-only: only visible to the user themselves
+        # (mutual-friends visibility is refined once the contacts system lands).
+        if vis == "anonymous" and d["user_id"] != requester:
+            continue
+        if vis == "friends" and d["user_id"] != requester:
+            continue
         u = await db.users.find_one({"user_id": d["user_id"]}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1})
         if u:
+            u["live"] = bool(d.get("at_venue"))
             users.append(u)
-    return {"count": len(users), "participants": users}
+    return {"count": len(docs), "participants": users}
 
 
 # ----------------------------- Reviews / Ratings -----------------------------

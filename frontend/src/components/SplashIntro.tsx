@@ -44,8 +44,8 @@ export default function SplashIntro({ onDone }: { onDone: () => void }) {
 const styles = StyleSheet.create({
   container: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", zIndex: 999 },
   logoWrap: { alignItems: "center", justifyContent: "center", marginBottom: 24 },
-  glow: { position: "absolute", width: 130, height: 130, borderRadius: 65, backgroundColor: "#7C5CFF", opacity: 0.35 },
-  logo: { width: 88, height: 88, borderRadius: 26, backgroundColor: "#7C5CFF", alignItems: "center", justifyContent: "center" },
+  glow: { position: "absolute", width: 130, height: 130, borderRadius: 65, backgroundColor: "#1FB0D0", opacity: 0.35 },
+  logo: { width: 88, height: 88, borderRadius: 26, backgroundColor: "#1FB0D0", alignItems: "center", justifyContent: "center" },
   wordmark: { color: "#FFFFFF", fontSize: 38, fontWeight: "900", letterSpacing: -1 },
   slogan: { color: "rgba(255,255,255,0.7)", fontSize: 15, marginTop: 8, fontWeight: "500" },
 });

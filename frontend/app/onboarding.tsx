@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, ActivityIndicator, Platform, Modal } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator, Platform } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Ionicons } from "@expo/vector-icons";
-import { Calendar } from "react-native-calendars";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
@@ -11,15 +11,14 @@ import { useI18n } from "@/src/i18n";
 import { useAuth } from "@/src/auth/AuthContext";
 import { api } from "@/src/api/client";
 import { getAge } from "@/src/utils/age";
+import { pickImage } from "@/src/utils/pickImage";
 import CategoryWheel from "@/src/components/CategoryWheel";
+import DateWheel from "@/src/components/DateWheel";
 import { CategoryKey } from "@/src/constants/categories";
 
 type Role = "user" | "business";
 
-function fmtDate(iso: string) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-}
+const DEFAULT_BIRTH = `${new Date().getFullYear() - 20}-06-15`;
 
 export default function Onboarding() {
   const { colors } = useTheme();
@@ -30,8 +29,10 @@ export default function Onboarding() {
 
   const [role, setRole] = useState<Role | null>(null);
   const [name, setName] = useState(user?.name || "");
-  const [birthdate, setBirthdate] = useState("");
-  const [showCal, setShowCal] = useState(false);
+  const [birthdate, setBirthdate] = useState(DEFAULT_BIRTH);
+  const [picture, setPicture] = useState(user?.picture || "");
+  const [bio, setBio] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [bizName, setBizName] = useState("");
   const [bizCat, setBizCat] = useState<CategoryKey>("food");
   const [bizAddress, setBizAddress] = useState("");
@@ -40,8 +41,12 @@ export default function Onboarding() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const maxDate = new Date().toISOString().slice(0, 10);
   const inputStyle = [styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }];
+
+  const changePhoto = async () => {
+    const res = await pickImage("library");
+    if ("base64" in res) setPicture(res.base64);
+  };
 
   const finish = async () => {
     setError("");
@@ -51,7 +56,7 @@ export default function Onboarding() {
       if (age === null || age < 16) return setError(t("onb_age_error"));
       setSaving(true);
       try {
-        await api.updateProfile({ name: name.trim(), birthdate, account_type: "user", onboarded: true });
+        await api.updateProfile({ name: name.trim(), birthdate, bio: bio.trim(), instagram: instagram.trim(), picture, account_type: "user", onboarded: true });
         if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         await refresh();
         router.replace("/(tabs)");
@@ -103,14 +108,24 @@ export default function Onboarding() {
       <KeyboardAwareScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: insets.bottom + 40 }} keyboardShouldPersistTaps="handled" bottomOffset={20}>
         {role === "user" ? (
           <>
+            <View style={styles.avatarWrap}>
+              <Pressable testID="onb-photo" onPress={changePhoto} style={[styles.avatar, { backgroundColor: colors.surfaceTertiary, borderColor: colors.brand }]}>
+                {picture ? <Image source={{ uri: picture }} style={styles.avatarImg} contentFit="cover" /> : <Ionicons name="person" size={40} color={colors.onSurfaceTertiary} />}
+                <View style={[styles.avatarEdit, { backgroundColor: colors.brand }]}><Ionicons name="camera" size={15} color={colors.onBrand} /></View>
+              </Pressable>
+            </View>
             <Field label={t("display_name")} colors={colors}>
               <TextInput testID="onb-name" value={name} onChangeText={setName} placeholder={t("display_name")} placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
             </Field>
             <Field label={t("onb_birthdate")} colors={colors}>
-              <Pressable testID="onb-birthdate" onPress={() => setShowCal(true)} style={[styles.dateBtn, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
-                <Ionicons name="calendar" size={18} color={colors.brand} />
-                <Text style={[styles.dateText, { color: birthdate ? colors.onSurface : colors.onSurfaceTertiary }]}>{birthdate ? fmtDate(birthdate) : t("onb_birthdate_hint")}</Text>
-              </Pressable>
+              <DateWheel value={birthdate} onChange={setBirthdate} />
+              {(() => { const a = getAge(birthdate); return a !== null ? <Text style={[styles.ageHint, { color: colors.onSurfaceTertiary }]}>{a} {t("years_old")}</Text> : null; })()}
+            </Field>
+            <Field label={t("bio")} colors={colors}>
+              <TextInput testID="onb-bio" value={bio} onChangeText={setBio} placeholder={t("bio")} placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 80, textAlignVertical: "top", paddingTop: 12 }]} />
+            </Field>
+            <Field label={t("instagram")} colors={colors}>
+              <TextInput testID="onb-instagram" value={instagram} onChangeText={setInstagram} placeholder="@yourhandle" autoCapitalize="none" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
             </Field>
           </>
         ) : (
@@ -136,28 +151,9 @@ export default function Onboarding() {
         {!!error && <Text style={{ color: colors.error, fontWeight: "600" }} testID="onb-error">{error}</Text>}
 
         <Pressable testID="onb-finish" onPress={finish} disabled={saving} style={[styles.finish, { backgroundColor: colors.brand, opacity: saving ? 0.7 : 1 }]}>
-          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.finishText}>{t("onb_finish")}</Text>}
+          {saving ? <ActivityIndicator color={colors.onBrand} /> : <Text style={[styles.finishText, { color: colors.onBrand }]}>{t("onb_finish")}</Text>}
         </Pressable>
       </KeyboardAwareScrollView>
-
-      <Modal visible={showCal} transparent animationType="fade" onRequestClose={() => setShowCal(false)}>
-        <Pressable style={styles.calBg} onPress={() => setShowCal(false)} testID="onb-cal-backdrop">
-          <Pressable style={[styles.calCard, { backgroundColor: colors.surfaceSecondary }]}>
-            <Calendar
-              testID="birthdate-calendar"
-              current="2004-01-01"
-              maxDate={maxDate}
-              onDayPress={(d: any) => { setBirthdate(d.dateString); setShowCal(false); }}
-              markedDates={birthdate ? { [birthdate]: { selected: true, selectedColor: colors.brand } } : {}}
-              theme={{
-                calendarBackground: colors.surfaceSecondary, dayTextColor: colors.onSurface, monthTextColor: colors.onSurface,
-                textDisabledColor: colors.onSurfaceTertiary, arrowColor: colors.brand, todayTextColor: colors.brand,
-                selectedDayBackgroundColor: colors.brand, selectedDayTextColor: "#FFFFFF",
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -199,10 +195,13 @@ const styles = StyleSheet.create({
   roleDesc: { fontSize: 13, marginTop: 2 },
   label: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
   input: { height: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
+  avatarWrap: { alignItems: "center", marginBottom: 4 },
+  avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  avatarImg: { width: "100%", height: "100%", borderRadius: 48 },
+  avatarEdit: { position: "absolute", bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
+  ageHint: { fontSize: 13, fontWeight: "700", textAlign: "center", marginTop: 8 },
   dateBtn: { flexDirection: "row", alignItems: "center", gap: 10, height: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14 },
   dateText: { fontSize: 15, fontWeight: "600" },
   finish: { height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
   finishText: { color: "#FFFFFF", fontSize: 17, fontWeight: "800" },
-  calBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 24 },
-  calCard: { borderRadius: 16, overflow: "hidden", width: "100%", padding: 8 },
 });
