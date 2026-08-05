@@ -90,6 +90,7 @@ function AuthGate() {
         <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
         <Stack.Screen name="login" options={{ animation: "fade" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+        <Stack.Screen name="verify" options={{ presentation: "modal" }} />
         <Stack.Screen name="chat/[eventId]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="crew/[id]" />
       </Stack>

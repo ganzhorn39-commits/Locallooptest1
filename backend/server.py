@@ -316,6 +316,8 @@ class ProfileUpdate(BaseModel):
     business_address: Optional[str] = None
     business_website: Optional[str] = None
     business_instagram: Optional[str] = None
+    identity_verified: Optional[bool] = None
+    selfie: Optional[str] = None
 
 
 @api_router.patch("/profile")
@@ -348,16 +350,16 @@ async def participants(event_id: str, user=Depends(get_current_user)):
     requester = user["user_id"]
     for d in docs:
         vis = d.get("visibility", "public")
-        # Anonymous: counted but never listed. Friends-only: only visible to the user themselves
-        # (mutual-friends visibility is refined once the contacts system lands).
-        if vis == "anonymous" and d["user_id"] != requester:
-            continue
-        if vis == "friends" and d["user_id"] != requester:
-            continue
-        u = await db.users.find_one({"user_id": d["user_id"]}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1})
-        if u:
-            u["live"] = bool(d.get("at_venue"))
-            users.append(u)
+        visible = vis == "public" or d["user_id"] == requester
+        if visible:
+            u = await db.users.find_one({"user_id": d["user_id"]}, {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "birthdate": 1, "identity_verified": 1})
+            if u:
+                u["live"] = bool(d.get("at_venue"))
+                u["anonymous"] = False
+                users.append(u)
+        else:
+            # Anonymous / friends-only (to non-friends): counted but shown as a placeholder.
+            users.append({"user_id": f"anon_{d['user_id'][:6]}", "anonymous": True, "live": bool(d.get("at_venue"))})
     return {"count": len(docs), "participants": users}
 
 
@@ -538,6 +540,13 @@ async def get_crew(crew_id: str, user=Depends(get_current_user)):
     if not crew or user["user_id"] not in crew.get("member_ids", []):
         raise HTTPException(status_code=404, detail="Crew not found")
     return await crew_detail(crew, user["user_id"])
+
+
+@api_router.post("/crews/{crew_id}/leave")
+async def leave_crew(crew_id: str, user=Depends(get_current_user)):
+    await db.crews.update_one({"id": crew_id}, {"$pull": {"member_ids": user["user_id"]}})
+    return {"ok": True}
+
 
 
 @api_router.post("/crews/join")

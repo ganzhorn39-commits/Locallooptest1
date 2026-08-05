@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing, Platform } from "react-native";
-import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
+import MapView, { Marker, Circle, PROVIDER_DEFAULT } from "react-native-maps";
 import { useTheme } from "@/src/theme/theme";
 import { categoryMeta } from "@/src/constants/categories";
 import type { EventItem } from "@/src/api/client";
@@ -11,6 +11,8 @@ type Props = {
   region: any;
   onSelect: (e: EventItem) => void;
   mapRef?: any;
+  radiusKm?: number | null;
+  userLoc?: { latitude: number; longitude: number } | null;
 };
 
 function Pin({ event, color, onPress }: { event: EventItem; color: string; onPress: () => void }) {
@@ -61,7 +63,7 @@ function clusterEvents(events: EventItem[], region: any): Cluster[] {
   });
 }
 
-export default function MapCanvas({ events, region, onSelect, mapRef }: Props) {
+export default function MapCanvas({ events, region, onSelect, mapRef, radiusKm, userLoc }: Props) {
   const { colors, isDark } = useTheme();
   const internalRef = useRef<MapView>(null);
   const ref = mapRef || internalRef;
@@ -70,6 +72,7 @@ export default function MapCanvas({ events, region, onSelect, mapRef }: Props) {
   useEffect(() => { setCurRegion(region); }, [region]);
 
   const clusters = useMemo(() => clusterEvents(events, curRegion || region), [events, curRegion]);
+  const circleCenter = userLoc || (region ? { latitude: region.latitude, longitude: region.longitude } : null);
 
   const zoomTo = (c: Cluster) => {
     const r = { latitude: c.latitude, longitude: c.longitude, latitudeDelta: (curRegion?.latitudeDelta || 0.09) / 2.5, longitudeDelta: (curRegion?.longitudeDelta || 0.09) / 2.5 };
@@ -88,6 +91,15 @@ export default function MapCanvas({ events, region, onSelect, mapRef }: Props) {
       onRegionChangeComplete={setCurRegion}
       testID="map-view"
     >
+      {radiusKm && circleCenter && (
+        <Circle
+          center={circleCenter}
+          radius={radiusKm * 1000}
+          strokeColor={colors.brand}
+          strokeWidth={2}
+          fillColor={colors.brand + "22"}
+        />
+      )}
       {clusters.map((c) => {
         if (c.items.length === 1) {
           const e = c.items[0];

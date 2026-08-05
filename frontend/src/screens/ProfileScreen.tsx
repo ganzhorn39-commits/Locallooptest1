@@ -67,6 +67,7 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
             const age = getAge((user as any)?.birthdate);
             const isBiz = (user as any)?.account_type === "business";
             const verified = (user as any)?.verified;
+            const idVerified = (user as any)?.identity_verified;
             const displayName = isBiz ? ((user as any)?.business_name || user?.name) : user?.name;
             return (
               <View style={styles.identityRow}>
@@ -77,6 +78,12 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
                   <View testID="verified-badge" style={styles.verifiedWrap}>
                     <Ionicons name="checkmark-circle" size={18} color={colors.brand} />
                     <Text style={[styles.verifiedText, { color: colors.brand }]}>{t("verified")}</Text>
+                  </View>
+                )}
+                {idVerified && (
+                  <View testID="identity-badge" style={styles.verifiedWrap}>
+                    <Ionicons name="shield-checkmark" size={16} color="#4DA3FF" />
+                    <Text style={[styles.verifiedText, { color: "#4DA3FF" }]}>{t("verify_identity")}</Text>
                   </View>
                 )}
               </View>

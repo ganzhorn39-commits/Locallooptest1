@@ -17,6 +17,7 @@ import { isMinor } from "@/src/utils/age";
 import MapCanvas from "@/src/components/MapCanvas";
 import CategoryFilterRow from "@/src/components/CategoryFilterRow";
 import SearchFilterBar from "@/src/components/SearchFilterBar";
+import RadiusFilter from "@/src/components/RadiusFilter";
 import EventSheet from "@/src/components/EventSheet";
 
 export default function MapHome() {
@@ -34,6 +35,8 @@ export default function MapHome() {
   const [checkedIn, setCheckedIn] = useState(false);
   const [region, setRegion] = useState<any>(DEFAULT_REGION);
   const [userLoc, setUserLoc] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const [showRadius, setShowRadius] = useState(false);
 
   const sheetRef = useRef<BottomSheet>(null);
   const mapRef = useRef<any>(null);
@@ -119,7 +122,7 @@ export default function MapHome() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="map-home">
-      <MapCanvas events={filtered} region={region} onSelect={onSelectPin} mapRef={mapRef} />
+      <MapCanvas events={filtered} region={region} onSelect={onSelectPin} mapRef={mapRef} radiusKm={radiusKm} userLoc={userLoc} />
 
       <View style={[styles.headerWrap, { top: insets.top + 8 }]} pointerEvents="box-none">
         <View style={styles.searchWrap}>
@@ -127,6 +130,25 @@ export default function MapHome() {
         </View>
 
         <CategoryFilterRow selected={category} onSelect={setCategory} />
+
+        <View style={styles.radiusRow}>
+          <Pressable
+            testID="radius-toggle"
+            onPress={() => setShowRadius((s) => !s)}
+            style={[styles.radiusPill, { backgroundColor: showRadius || radiusKm !== null ? colors.brand : colors.surfaceSecondary, borderColor: showRadius || radiusKm !== null ? colors.brand : colors.border }]}
+          >
+            <Ionicons name="navigate" size={14} color={showRadius || radiusKm !== null ? colors.onBrand : colors.onSurface} />
+            <Text style={[styles.radiusPillText, { color: showRadius || radiusKm !== null ? colors.onBrand : colors.onSurface }]}>
+              {radiusKm === null ? t("radius") : `${radiusKm} ${t("km_unit")}`}
+            </Text>
+          </Pressable>
+        </View>
+
+        {showRadius && (
+          <View style={styles.radiusPanel}>
+            <RadiusFilter value={radiusKm} onChange={setRadiusKm} />
+          </View>
+        )}
       </View>
 
       {Platform.OS !== "web" && (
@@ -176,6 +198,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   headerWrap: { position: "absolute", left: 0, right: 0, gap: 8 },
   searchWrap: { paddingHorizontal: 16 },
+  radiusRow: { paddingHorizontal: 16, flexDirection: "row" },
+  radiusPill: { flexDirection: "row", alignItems: "center", gap: 6, height: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: 1 },
+  radiusPillText: { fontSize: 13, fontWeight: "800" },
+  radiusPanel: { paddingHorizontal: 16 },
   recenter: { position: "absolute", right: 16, width: 48, height: 48, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   surprise: {
     position: "absolute", left: 16, flexDirection: "row", alignItems: "center", gap: 8,

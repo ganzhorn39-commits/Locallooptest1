@@ -53,6 +53,14 @@ const DICT: Record<Lang, Record<string, string>> = {
     reservation_link: "Reservation Link", reserve: "Reserve a Table", capacity_label: "Max Capacity (optional)",
     radius: "Radius", radius_all: "All", at_venue: "At Venue", live_badge: "Live",
     date_any: "Any date", pick_dates: "Dates", clear: "Clear", apply: "Apply",
+    // account type + verification + swipe + anon
+    signup: "Sign Up", choose_account: "Choose your account type",
+    acct_personal: "Personal Profile", acct_personal_desc: "Join events, chat & connect",
+    acct_business: "Business Partner", acct_business_desc: "For venues, bars, clubs & organizers",
+    verify_profile: "Verify Profile", verify_identity: "Verified Identity", verify_intro: "Take a quick selfie to verify your identity",
+    verify_cta: "Take Selfie", verify_done: "Identity verified!", verify_retake: "Retake", verify_saving: "Verifying...",
+    camera_permission: "Camera access needed", grant_permission: "Allow Camera", open_settings: "Open Settings",
+    delete: "Delete", leave: "Leave", anon_attendee: "Anonymous guest", km_unit: "km",
     // explore
     explore_title: "Explore", no_match: "No events match your filters.",
     // create
@@ -126,6 +134,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     reservation_link: "Reservierungslink", reserve: "Tisch reservieren", capacity_label: "Max. Kapazität (optional)",
     radius: "Umkreis", radius_all: "Alle", at_venue: "Vor Ort", live_badge: "Live",
     date_any: "Beliebig", pick_dates: "Datum", clear: "Löschen", apply: "Anwenden",
+    signup: "Registrieren", choose_account: "Wähle deinen Account-Typ",
+    acct_personal: "Persönliches Profil", acct_personal_desc: "Events beitreten, chatten & connecten",
+    acct_business: "Business Partner", acct_business_desc: "Für Locations, Bars, Clubs & Veranstalter",
+    verify_profile: "Profil verifizieren", verify_identity: "Verifizierte Identität", verify_intro: "Mach ein kurzes Selfie zur Verifizierung",
+    verify_cta: "Selfie aufnehmen", verify_done: "Identität verifiziert!", verify_retake: "Wiederholen", verify_saving: "Verifiziere...",
+    camera_permission: "Kamerazugriff benötigt", grant_permission: "Kamera erlauben", open_settings: "Einstellungen öffnen",
+    delete: "Löschen", leave: "Verlassen", anon_attendee: "Anonymer Teilnehmer", km_unit: "km",
     host_event: "Event veranstalten", event_banner: "Event-Banner", upload_banner: "Bannerbild hochladen", change_banner: "Banner ändern",
     event_title: "Event-Titel", category: "Kategorie", date: "Datum", time: "Uhrzeit",
     recurring_q: "Wiederkehrendes Event?", repeat_this: "Event wiederholen · Wiederkehrend?",

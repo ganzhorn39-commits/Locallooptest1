@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, ImageBackground, Platform } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, ImageBackground, Platform, Modal } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,9 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
+import { storage } from "@/src/utils/storage";
+
+export const PENDING_ROLE_KEY = "pending_account_role";
 
 // BRANDING EXCEPTION: name + slogan are never translated.
 const BRAND = "LocalLoop";
@@ -20,9 +23,16 @@ export default function Login() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [note, setNote] = React.useState("");
+  const [showAccountType, setShowAccountType] = React.useState(false);
   const allowDev = process.env.EXPO_PUBLIC_ALLOW_DEV_LOGIN === "1";
 
   useEffect(() => { if (user) router.replace("/(tabs)"); }, [user]);
+
+  const chooseRole = async (role: "user" | "business") => {
+    await storage.setItem(PENDING_ROLE_KEY, role);
+    setShowAccountType(false);
+    login();
+  };
 
   return (
     <View style={styles.container} testID="login-screen">
@@ -50,7 +60,7 @@ export default function Login() {
 
             {!!note && <Text style={styles.note} testID="login-note">{note}</Text>}
 
-            <Pressable testID="google-login-button" onPress={login} disabled={loggingIn} style={[styles.btn, styles.googleBtn, { opacity: loggingIn ? 0.7 : 1 }]}>
+            <Pressable testID="google-login-button" onPress={() => setShowAccountType(true)} disabled={loggingIn} style={[styles.btn, styles.googleBtn, { opacity: loggingIn ? 0.7 : 1 }]}>
               {loggingIn ? <ActivityIndicator color="#111" /> : (<>
                 <View style={styles.gIcon}><Text style={styles.gIconText}>G</Text></View>
                 <Text style={styles.googleText}>{t("google")}</Text>
@@ -77,13 +87,40 @@ export default function Login() {
               <Pressable testID="language-toggle" onPress={() => setLang(lang === "en" ? "de" : "en")} hitSlop={10}>
                 <Text style={styles.barLink}>{lang === "en" ? "DE / EN" : "EN / DE"}</Text>
               </Pressable>
-              <Pressable testID="business-login" onPress={() => setNote(t("soon"))} hitSlop={10}>
+              <Pressable testID="business-login" onPress={() => chooseRole("business")} hitSlop={10}>
                 <Text style={styles.barLink}>{t("business")}</Text>
               </Pressable>
             </View>
           </View>
         </BlurView>
       </View>
+
+      {/* Account type chooser */}
+      <Modal visible={showAccountType} transparent animationType="fade" onRequestClose={() => setShowAccountType(false)}>
+        <Pressable style={styles.atBg} onPress={() => setShowAccountType(false)} testID="account-type-backdrop">
+          <BlurView intensity={Platform.OS === "android" ? 100 : 60} tint="dark" style={styles.atCard}>
+            <Pressable>
+              <Text style={styles.atTitle}>{t("choose_account")}</Text>
+              <Pressable testID="account-personal" onPress={() => chooseRole("user")} style={styles.atOption}>
+                <View style={[styles.atIcon, { backgroundColor: "#159AB8" }]}><Ionicons name="person" size={22} color="#FFFFFF" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.atLabel}>{t("acct_personal")}</Text>
+                  <Text style={styles.atDesc}>{t("acct_personal_desc")}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+              </Pressable>
+              <Pressable testID="account-business" onPress={() => chooseRole("business")} style={styles.atOption}>
+                <View style={[styles.atIcon, { backgroundColor: "#2EE6A6" }]}><Ionicons name="briefcase" size={22} color="#04160F" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.atLabel}>{t("acct_business")}</Text>
+                  <Text style={styles.atDesc}>{t("acct_business_desc")}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+              </Pressable>
+            </Pressable>
+          </BlurView>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -114,4 +151,11 @@ const styles = StyleSheet.create({
   demoText: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "600", textDecorationLine: "underline" },
   bottomBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   barLink: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: "700" },
+  atBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  atCard: { borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 40, gap: 14, overflow: "hidden", backgroundColor: "rgba(12,14,20,0.6)", borderTopWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  atTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", marginBottom: 6 },
+  atOption: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", backgroundColor: "rgba(255,255,255,0.06)", marginBottom: 10 },
+  atIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  atLabel: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  atDesc: { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 },
 });

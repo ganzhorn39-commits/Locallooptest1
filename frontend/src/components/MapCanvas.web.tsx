@@ -10,11 +10,14 @@ type Props = {
   events: EventItem[];
   region: any;
   onSelect: (e: EventItem) => void;
+  mapRef?: any;
+  radiusKm?: number | null;
+  userLoc?: { latitude: number; longitude: number } | null;
 };
 
 // Web fallback "map": a stylized canvas with positioned pins so the full
 // tap -> bottom sheet flow works in the web preview (react-native-maps is native-only).
-export default function MapCanvas({ events, region, onSelect }: Props) {
+export default function MapCanvas({ events, region, onSelect, radiusKm }: Props) {
   const { colors, isDark } = useTheme();
   const { width, height } = useWindowDimensions();
   const r = region || DEFAULT_REGION;
@@ -28,6 +31,9 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
     };
   };
 
+  // Approximate on-screen radius circle (deg per km ~ 1/111).
+  const circleDiameter = radiusKm ? ((radiusKm / 111) / r.latitudeDelta) * height * 2 : 0;
+
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "#0e1626" : "#dfe7ef" }]} testID="map-view">
       <Image
@@ -37,6 +43,22 @@ export default function MapCanvas({ events, region, onSelect }: Props) {
         transition={300}
       />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.35)" }]} />
+      {!!radiusKm && circleDiameter > 0 && (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: width / 2 - circleDiameter / 2,
+            top: height * 0.47 - circleDiameter / 2,
+            width: circleDiameter,
+            height: circleDiameter,
+            borderRadius: circleDiameter / 2,
+            borderWidth: 2,
+            borderColor: colors.brand,
+            backgroundColor: colors.brand + "22",
+          }}
+        />
+      )}
       {events.map((e) => {
         const meta = categoryMeta(e.category);
         const color = meta.color;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, TextInput, ActivityIndicator, Platform } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,12 +12,14 @@ import { useAuth } from "@/src/auth/AuthContext";
 import { api } from "@/src/api/client";
 import { getAge } from "@/src/utils/age";
 import { pickImage } from "@/src/utils/pickImage";
+import { storage } from "@/src/utils/storage";
 import CategoryWheel from "@/src/components/CategoryWheel";
 import DateWheel from "@/src/components/DateWheel";
 import { CategoryKey } from "@/src/constants/categories";
 
 type Role = "user" | "business";
 
+const PENDING_ROLE_KEY = "pending_account_role";
 const DEFAULT_BIRTH = `${new Date().getFullYear() - 20}-06-15`;
 
 export default function Onboarding() {
@@ -40,6 +42,16 @@ export default function Onboarding() {
   const [bizInstagram, setBizInstagram] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const pending = await storage.getItem<string>(PENDING_ROLE_KEY, "");
+      if (pending === "user" || pending === "business") {
+        setRole(pending as Role);
+        storage.removeItem(PENDING_ROLE_KEY);
+      }
+    })();
+  }, []);
 
   const inputStyle = [styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }];
 

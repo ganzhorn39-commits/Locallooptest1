@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomSheet from "@gorhom/bottom-sheet";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
@@ -9,9 +10,11 @@ import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
 import { isMinor } from "@/src/utils/age";
+import { useUserLocation } from "@/src/utils/useUserLocation";
 import EventCard from "@/src/components/EventCard";
 import SearchFilterBar from "@/src/components/SearchFilterBar";
 import CategoryFilterRow from "@/src/components/CategoryFilterRow";
+import RadiusFilter from "@/src/components/RadiusFilter";
 import EventSheet from "@/src/components/EventSheet";
 
 export default function ExploreScreen() {
@@ -29,6 +32,9 @@ export default function ExploreScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<EventItem | null>(null);
   const [checkedIn, setCheckedIn] = useState(false);
+  const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const [showRadius, setShowRadius] = useState(false);
+  const { userLoc } = useUserLocation();
 
   const sheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["36%", "90%"], []);
@@ -49,8 +55,8 @@ export default function ExploreScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = useMemo(
-    () => filterEvents(events, { query, category, quick, hideRestricted: isMinor(user?.birthdate) }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
-    [events, query, category, quick, user]
+    () => filterEvents(events, { query, category, quick, userLoc, radiusKm, hideRestricted: isMinor(user?.birthdate) }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
+    [events, query, category, quick, userLoc, radiusKm, user]
   );
 
   const openEvent = useCallback(async (e: EventItem) => {
@@ -85,6 +91,19 @@ export default function ExploreScreen() {
         <View style={{ marginHorizontal: -16, marginTop: 4 }}>
           <CategoryFilterRow selected={category} onSelect={setCategory} />
         </View>
+        <View style={styles.radiusRow}>
+          <Pressable
+            testID="radius-toggle"
+            onPress={() => setShowRadius((s) => !s)}
+            style={[styles.radiusPill, { backgroundColor: showRadius || radiusKm !== null ? colors.brand : colors.surfaceTertiary, borderColor: showRadius || radiusKm !== null ? colors.brand : colors.border }]}
+          >
+            <Ionicons name="navigate" size={14} color={showRadius || radiusKm !== null ? colors.onBrand : colors.onSurface} />
+            <Text style={[styles.radiusPillText, { color: showRadius || radiusKm !== null ? colors.onBrand : colors.onSurface }]}>
+              {radiusKm === null ? t("radius") : `${radiusKm} ${t("km_unit")}`}
+            </Text>
+          </Pressable>
+        </View>
+        {showRadius && <RadiusFilter value={radiusKm} onChange={setRadiusKm} />}
       </View>
 
       {loading ? (
@@ -105,7 +124,7 @@ export default function ExploreScreen() {
 
       <BottomSheet ref={sheetRef} index={-1} snapPoints={snapPoints} enableDynamicSizing={false} enablePanDownToClose onClose={() => setSelected(null)}
         handleIndicatorStyle={{ backgroundColor: colors.borderStrong }} backgroundStyle={{ backgroundColor: colors.surfaceSecondary }}>
-        {selected && <EventSheet event={selected} checkedIn={checkedIn} onCheckin={onCheckin} bottomInset={insets.bottom} />}
+        {selected && <EventSheet event={selected} checkedIn={checkedIn} onCheckin={onCheckin} bottomInset={insets.bottom} userLoc={userLoc} />}
       </BottomSheet>
     </View>
   );
@@ -115,5 +134,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 8, borderBottomWidth: 1, gap: 10 },
   title: { fontSize: 28, fontWeight: "900", letterSpacing: -0.5 },
+  radiusRow: { flexDirection: "row" },
+  radiusPill: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1 },
+  radiusPillText: { fontSize: 13, fontWeight: "800" },
   empty: { textAlign: "center", marginTop: 50, fontSize: 15, fontStyle: "italic" },
 });

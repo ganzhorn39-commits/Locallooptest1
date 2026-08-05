@@ -232,15 +232,24 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
             <View style={styles.attendeeRow}>
               {attendeeList.slice(0, 8).map((a) => (
                 <View key={a.user_id} style={styles.attendee}>
-                  <View style={[styles.attendeeAvatar, { backgroundColor: colors.surfaceTertiary, borderColor: a.live ? colors.accent : catColor }]}>
-                    {a.picture ? (
+                  <View style={[styles.attendeeAvatar, { backgroundColor: colors.surfaceTertiary, borderColor: a.anonymous ? colors.borderStrong : a.live ? colors.accent : catColor }]}>
+                    {a.anonymous ? (
+                      <Ionicons name="person" size={20} color={colors.onSurfaceTertiary} />
+                    ) : a.picture ? (
                       <Image source={{ uri: a.picture }} style={styles.attendeeImg} contentFit="cover" />
                     ) : (
                       <Text style={[styles.attendeeInitial, { color: colors.onSurface }]}>{(a.name || "?").charAt(0).toUpperCase()}</Text>
                     )}
-                    {a.live && <View style={[styles.liveBadge, { backgroundColor: colors.accent, borderColor: colors.surfaceSecondary }]} />}
+                    {!a.anonymous && a.live && <View style={[styles.liveBadge, { backgroundColor: colors.accent, borderColor: colors.surfaceSecondary }]} />}
+                    {!a.anonymous && a.identity_verified && (
+                      <View style={[styles.verBadge, { backgroundColor: "#4DA3FF", borderColor: colors.surfaceSecondary }]}>
+                        <Ionicons name="checkmark" size={9} color="#FFFFFF" />
+                      </View>
+                    )}
                   </View>
-                  <Text style={[styles.attendeeName, { color: a.live ? colors.accent : colors.onSurfaceSecondary }]} numberOfLines={1}>{a.live ? t("live_badge") : (a.name || "Guest").split(" ")[0]}</Text>
+                  <Text style={[styles.attendeeName, { color: a.anonymous ? colors.onSurfaceTertiary : a.live ? colors.accent : colors.onSurfaceSecondary }]} numberOfLines={1}>
+                    {a.anonymous ? t("anon_attendee") : a.live ? t("live_badge") : (a.name || "Guest").split(" ")[0]}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -455,6 +464,7 @@ const styles = StyleSheet.create({
   reviewAuthor: { fontSize: 14, fontWeight: "700" },
   reviewComment: { fontSize: 14, lineHeight: 20 },
   liveBadge: { position: "absolute", bottom: 0, right: 0, width: 13, height: 13, borderRadius: 7, borderWidth: 2 },
+  verBadge: { position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
   rsvpBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   rsvpCard: { borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 34, gap: 12 },
   rsvpTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },

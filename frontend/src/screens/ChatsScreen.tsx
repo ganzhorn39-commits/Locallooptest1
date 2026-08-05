@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Ionicons } from "@expo/vector-icons";
+import { Swipeable } from "react-native-gesture-handler";
 import { useRouter, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
@@ -58,6 +59,24 @@ export default function ChatsScreen() {
 
   const inputStyle = [styles.input, { backgroundColor: colors.surfaceTertiary, color: colors.onSurface, borderColor: colors.border }];
 
+  const leaveEvent = async (id: string) => {
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    try { await api.checkin(id); } catch {}
+    load();
+  };
+  const leaveCrewChat = async (id: string) => {
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    try { await api.leaveCrew(id); } catch {}
+    load();
+  };
+
+  const RightAction = ({ label, onPress, testID }: { label: string; onPress: () => void; testID: string }) => (
+    <Pressable testID={testID} onPress={onPress} style={[styles.swipeAction, { backgroundColor: colors.error }]}>
+      <Ionicons name="trash" size={20} color="#FFFFFF" />
+      <Text style={styles.swipeText}>{label}</Text>
+    </Pressable>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="chats-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
@@ -74,16 +93,18 @@ export default function ChatsScreen() {
           attending.map((e) => {
             const meta = categoryMeta(e.category);
             return (
-              <Pressable key={e.id} testID={`chat-item-${e.id}`} onPress={() => router.push(`/chat/${e.id}`)} style={[styles.row, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-                <View style={[styles.avatar, { backgroundColor: meta.color }]}>
-                  <Text style={{ fontSize: 20 }}>{meta.emoji}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: colors.onSurface }]} numberOfLines={1}>{e.title}</Text>
-                  <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{e.live_count} {t("attending")} · {t("tap_to_chat")}</Text>
-                </View>
-                <Ionicons name="chatbubbles" size={20} color={colors.brand} />
-              </Pressable>
+              <Swipeable key={e.id} overshootRight={false} renderRightActions={() => <RightAction testID={`leave-chat-${e.id}`} label={t("leave")} onPress={() => leaveEvent(e.id)} />}>
+                <Pressable testID={`chat-item-${e.id}`} onPress={() => router.push(`/chat/${e.id}`)} style={[styles.row, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                  <View style={[styles.avatar, { backgroundColor: meta.color }]}>
+                    <Text style={{ fontSize: 20 }}>{meta.emoji}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: colors.onSurface }]} numberOfLines={1}>{e.title}</Text>
+                    <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{e.live_count} {t("attending")} · {t("tap_to_chat")}</Text>
+                  </View>
+                  <Ionicons name="chatbubbles" size={20} color={colors.brand} />
+                </Pressable>
+              </Swipeable>
             );
           })
         )}
@@ -102,16 +123,18 @@ export default function ChatsScreen() {
         </View>
 
         {crews.map((c) => (
-          <Pressable key={c.id} testID={`crew-${c.id}`} onPress={() => router.push(`/crew/${c.id}`)} style={[styles.row, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
-            <View style={[styles.avatar, { backgroundColor: colors.brandTertiary }]}>
-              <Ionicons name="people" size={20} color={colors.onBrandTertiary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: colors.onSurface }]}>{c.name}</Text>
-              <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{c.member_count} {c.member_count !== 1 ? t("member_other") : t("member_one")} · {c.invite_code}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceTertiary} />
-          </Pressable>
+          <Swipeable key={c.id} overshootRight={false} renderRightActions={() => <RightAction testID={`leave-crew-${c.id}`} label={t("leave")} onPress={() => leaveCrewChat(c.id)} />}>
+            <Pressable testID={`crew-${c.id}`} onPress={() => router.push(`/crew/${c.id}`)} style={[styles.row, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <View style={[styles.avatar, { backgroundColor: colors.brandTertiary }]}>
+                <Ionicons name="people" size={20} color={colors.onBrandTertiary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>{c.name}</Text>
+                <Text style={[styles.rowSub, { color: colors.onSurfaceTertiary }]}>{c.member_count} {c.member_count !== 1 ? t("member_other") : t("member_one")} · {c.invite_code}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceTertiary} />
+            </Pressable>
+          </Swipeable>
         ))}
       </KeyboardAwareScrollView>
     </View>
@@ -132,4 +155,6 @@ const styles = StyleSheet.create({
   inline: { flexDirection: "row", gap: 10, alignItems: "center" },
   input: { height: 48, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
   smallBtn: { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  swipeAction: { width: 88, marginBottom: 0, borderRadius: 16, alignItems: "center", justifyContent: "center", marginLeft: 8, gap: 3 },
+  swipeText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
 });

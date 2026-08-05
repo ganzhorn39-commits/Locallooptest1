@@ -1,3 +1,15 @@
+# LocalLoop — Feature Round 5 (2026-06) — 5 new features
+- Palette refined to matte charcoal/obsidian + ice-blue (#159AB8) primary + emerald mint accent (NO purple/violet/orange); categories recolored; theme defaults to dark.
+- Welcome slogan set to German "Dein Stadtpuls. Live auf der Karte."; Email button labeled "Email OTP".
+- Birthdate uses a scrollable WHEEL picker (Day/Month/Year) in onboarding; onboarding adds profile picture, bio, instagram fields.
+- #1 Radius slider (1–30 km) + presets (1/5/15/All) floating glass panel on Map + Explore; geodesic filtering; translucent radius Circle on map. Uses `useUserLocation` hook.
+- #2 Account-type chooser modal on Welcome (Personal vs Business) → stores `pending_account_role` → onboarding pre-selects role.
+- #3 Self-serve selfie verification: `app/verify.tsx` (expo-camera front selfie) → PATCH profile `{identity_verified, selfie}` → "Verified Identity" badge on Profile + attendee list; entry in Settings. (Camera = build-only.)
+- #4 Swipe-to-delete chat rows (Swipeable): event chat → leave (un-checkin), crew → `POST /api/crews/{id}/leave`.
+- #5 Anonymous attendees: participants returns `{anonymous:true}` placeholders; EventSheet shows silhouette + "Anonymer Teilnehmer"; count still increments.
+- Backend: checkin `{visibility, at_venue}` + capacity 409; participants privacy-aware + `live`/`identity_verified` flags; reviews; `identity_verified`/`selfie` profile fields; crew leave.
+
+
 # LocalLoop — Product Requirements Document
 
 ## Original Problem Statement

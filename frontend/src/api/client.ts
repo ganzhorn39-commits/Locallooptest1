@@ -82,6 +82,9 @@ export const api = {
   postReview: (id: string, rating: number, comment: string) =>
     req(`/events/${id}/reviews`, { method: "POST", body: JSON.stringify({ rating, comment }) }),
 
+  // Crews
+  leaveCrew: (id: string) => req(`/crews/${id}/leave`, { method: "POST" }),
+
   // Chat
   getMessages: (id: string): Promise<any[]> => req(`/events/${id}/messages`),
   sendMessage: (id: string, text: string) =>

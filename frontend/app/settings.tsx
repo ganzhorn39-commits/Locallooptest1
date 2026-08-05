@@ -11,7 +11,7 @@ import { storage } from "@/src/utils/storage";
 export default function Settings() {
   const { colors, isDark, toggle } = useTheme();
   const { lang, setLang, t } = useI18n();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -76,6 +76,24 @@ export default function Settings() {
           <Row label={isDark ? "Dark mode" : "Light mode"} colors={colors}>
             <Switch testID="toggle-theme" value={isDark} onValueChange={toggle} trackColor={{ true: colors.brand, false: colors.borderStrong }} />
           </Row>
+        </Section>
+
+        {/* Verification */}
+        <Section title={t("verify_identity")} colors={colors}>
+          <Pressable testID="verify-profile-row" onPress={() => router.push("/verify")} style={[styles.linkRow, { borderColor: colors.border }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="shield-checkmark" size={18} color={(user as any)?.identity_verified ? colors.brand : colors.onSurfaceTertiary} />
+              <Text style={[styles.linkText, { color: colors.onSurface }]}>{t("verify_profile")}</Text>
+            </View>
+            {(user as any)?.identity_verified ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="checkmark-circle" size={18} color="#4DA3FF" />
+                <Text style={{ color: "#4DA3FF", fontWeight: "700", fontSize: 13 }}>{t("verify_done")}</Text>
+              </View>
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceTertiary} />
+            )}
+          </Pressable>
         </Section>
 
         {/* Legal */}
