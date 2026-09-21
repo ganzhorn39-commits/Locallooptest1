@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, Platform, Modal, TextInput, Share } 
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import * as WebBrowser from "expo-web-browser";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";

@@ -1,3 +1,11 @@
+# LocalLoop — Expo SDK Upgrade (2026-06)
+- Upgraded Expo SDK 54 → 57 (`yarn expo install expo@latest` + `--fix`); RN 0.81 → 0.86; expo-doctor 20/20 pass.
+- app.json: removed `newArchEnabled` + android `edgeToEdgeEnabled` (54→55 change).
+- Vector icons migrated: `@expo/vector-icons` → `@react-native-vector-icons/ionicons` across all 20 files (Ionicons default import). `use-icon-fonts.ts` now loads the bundled `Ionicons.ttf` (family "Ionicons") via expo-font.
+- Fixed `StyleSheet.absoluteFillObject` typing (new RN types) in verify.tsx / SplashIntro.tsx / MapHome.tsx.
+- PENDING (next): time filter [JETZT]/[HEUTE]/[DIESE WOCHE] on Map — not yet implemented.
+
+
 # LocalLoop — Feature Round 5 (2026-06) — 5 new features
 - Palette refined to matte charcoal/obsidian + ice-blue (#159AB8) primary + emerald mint accent (NO purple/violet/orange); categories recolored; theme defaults to dark.
 - Welcome slogan set to German "Dein Stadtpuls. Live auf der Karte."; Email button labeled "Email OTP".

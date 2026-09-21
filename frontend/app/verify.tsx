@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator, Platform, Linking } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   sub: { fontSize: 13, textAlign: "center" },
   camWrap: { flex: 1, margin: 20, borderRadius: 24, overflow: "hidden", alignItems: "center", justifyContent: "center", backgroundColor: "#000" },
   ring: { position: "absolute", width: 220, height: 280, borderRadius: 140, borderWidth: 3, opacity: 0.7 },
-  doneBadge: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", gap: 10 },
+  doneBadge: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", gap: 10 },
   doneText: { fontSize: 18, fontWeight: "800" },
   controls: { paddingHorizontal: 20, gap: 14 },
   primary: { height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 },

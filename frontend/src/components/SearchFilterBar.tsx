@@ -1,6 +1,6 @@
 import React from "react";
 import { View, TextInput, ScrollView, Pressable, Text, StyleSheet, Platform } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { QUICK_FILTERS, QuickKey } from "@/src/utils/filters";

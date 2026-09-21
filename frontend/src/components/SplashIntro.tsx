@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 export default function SplashIntro({ onDone }: { onDone: () => void }) {
   const scale = useRef(new Animated.Value(0.7)).current;
@@ -42,7 +42,7 @@ export default function SplashIntro({ onDone }: { onDone: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  container: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center", zIndex: 999 },
+  container: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, alignItems: "center", justifyContent: "center", zIndex: 999 },
   logoWrap: { alignItems: "center", justifyContent: "center", marginBottom: 24 },
   glow: { position: "absolute", width: 130, height: 130, borderRadius: 65, backgroundColor: "#1FB0D0", opacity: 0.35 },
   logo: { width: 88, height: 88, borderRadius: 26, backgroundColor: "#1FB0D0", alignItems: "center", justifyContent: "center" },
