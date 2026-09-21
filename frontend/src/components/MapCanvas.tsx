@@ -105,7 +105,7 @@ export default function MapCanvas({ events, region, onSelect, mapRef, radiusKm, 
           const e = c.items[0];
           const meta = categoryMeta(e.category);
           return (
-            <Marker key={e.id} coordinate={{ latitude: e.latitude, longitude: e.longitude }} onPress={() => onSelect(e)} tracksViewChanges={Platform.OS === "ios" ? false : undefined}>
+            <Marker key={e.id} coordinate={{ latitude: e.pin_latitude ?? e.latitude, longitude: e.pin_longitude ?? e.longitude }} onPress={() => onSelect(e)} tracksViewChanges={Platform.OS === "ios" ? false : undefined}>
               <Pin event={e} color={meta.color} onPress={() => onSelect(e)} />
             </Marker>
           );

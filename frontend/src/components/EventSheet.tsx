@@ -9,9 +9,10 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/src/theme/theme";
 import { useI18n } from "@/src/i18n";
+import { useAuth } from "@/src/auth/AuthContext";
 import { categoryMeta } from "@/src/constants/categories";
 import { api, EventItem } from "@/src/api/client";
-import { pickImage } from "@/src/utils/pickImage";
+
 import { countdown } from "@/src/utils/filters";
 
 type Props = {
@@ -50,6 +51,7 @@ const openLink = async (url: string) => {
 export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, userLoc }: Props) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const { user, promptLogin } = useAuth();
   const router = useRouter();
   const meta = categoryMeta(event.category);
   const catColor = meta.color;
@@ -60,11 +62,8 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
   const taken = event.spots_taken || 0;
   const soldOut = capacity > 0 && taken >= capacity;
 
-  const [stories, setStories] = useState<any[]>([]);
   const [participants, setParticipants] = useState(0);
   const [attendeeList, setAttendeeList] = useState<any[]>([]);
-  const [viewing, setViewing] = useState<any | null>(null);
-  const [posting, setPosting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [myRating, setMyRating] = useState(0);
@@ -74,8 +73,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
 
   const loadSocial = useCallback(async () => {
     try {
-      const [st, pt] = await Promise.all([api.getStories(event.id), api.participants(event.id)]);
-      setStories(st);
+      const pt = await api.participants(event.id);
       setParticipants(pt.count);
       setAttendeeList(pt.participants || []);
     } catch {}
@@ -108,6 +106,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
   };
 
   const toggleSave = async () => {
+    if (!user) { promptLogin(); return; }
     setSaved((s) => !s);
     if (Platform.OS !== "web") Haptics.selectionAsync();
     try { await api.toggleSave(event.id); } catch { loadSocial(); }
@@ -116,17 +115,6 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
   useEffect(() => { loadSocial(); }, [loadSocial, checkedIn]);
 
   const instaUrl = event.instagram ? `https://instagram.com/${event.instagram.replace(/^@/, "")}` : "";
-
-  const addStory = async (source: "camera" | "library") => {
-    const res = await pickImage(source);
-    if ("base64" in res) {
-      setPosting(true);
-      try {
-        await api.addStory(event.id, res.base64);
-        await loadSocial();
-      } catch {} finally { setPosting(false); }
-    }
-  };
 
   return (
     <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset + 24 }} testID="event-sheet">
@@ -207,6 +195,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
         <Pressable
           testID="checkin-button"
           onPress={() => {
+            if (!user) { promptLogin(); return; }
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             if (checkedIn) { onCheckin(); return; }
             if (soldOut) return;
@@ -256,37 +245,11 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
           </View>
         )}
 
-        {/* Stories / Moments */}
-        <View style={styles.storiesHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.onSurfaceTertiary }]}>{t("moments")}</Text>
-        </View>
-        <View style={styles.storiesRow}>
-          {checkedIn && (
-            <Pressable
-              testID="add-story-button"
-              onPress={() => addStory(Platform.OS === "web" ? "library" : "camera")}
-              style={[styles.storyAdd, { borderColor: catColor, backgroundColor: colors.surfaceTertiary, opacity: posting ? 0.6 : 1 }]}
-            >
-              <Ionicons name="camera" size={20} color={catColor} />
-            </Pressable>
-          )}
-          {stories.map((s) => (
-            <Pressable key={s.id} testID={`story-${s.id}`} onPress={() => setViewing(s)} style={[styles.storyThumb, { borderColor: catColor }]}>
-              <Image source={{ uri: s.image }} style={styles.storyImg} contentFit="cover" />
-            </Pressable>
-          ))}
-          {stories.length === 0 && !checkedIn && (
-            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("checkin_to_share")}</Text>
-          )}
-          {stories.length === 0 && checkedIn && (
-            <Text style={[styles.emptyStories, { color: colors.onSurfaceTertiary }]}>{t("first_moment")}</Text>
-          )}
-        </View>
-
         {/* Group chat */}
         <Pressable
           testID="open-chat-button"
           onPress={() => {
+            if (!user) { promptLogin(); return; }
             if (!checkedIn) return;
             router.push(`/chat/${event.id}`);
           }}
@@ -405,21 +368,6 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
               </Pressable>
             ))}
           </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Story viewer */}
-      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
-        <Pressable style={styles.viewer} onPress={() => setViewing(null)} testID="story-viewer">
-          {viewing && <Image source={{ uri: viewing.image }} style={styles.viewerImg} contentFit="contain" />}
-          {viewing && (
-            <View style={styles.viewerMeta}>
-              <Text style={styles.viewerName}>{viewing.user_name}</Text>
-            </View>
-          )}
-          <View style={styles.viewerClose}>
-            <Ionicons name="close" size={28} color="#FFFFFF" />
-          </View>
         </Pressable>
       </Modal>
     </BottomSheetScrollView>

@@ -9,12 +9,15 @@ import { useRouter, useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "@/src/theme/theme";
 import { useI18n } from "@/src/i18n";
+import { useAuth } from "@/src/auth/AuthContext";
 import { api, EventItem } from "@/src/api/client";
 import { categoryMeta } from "@/src/constants/categories";
+import GuestGate from "@/src/components/GuestGate";
 
 export default function ChatsScreen() {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -27,12 +30,13 @@ export default function ChatsScreen() {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
+    if (!user) { setLoading(false); return; }
     try {
       const [att, cr] = await Promise.all([api.myAttending(), api.myCrews()]);
       setAttending(att);
       setCrews(cr);
     } catch {} finally { setLoading(false); }
-  }, []);
+  }, [user]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -79,6 +83,10 @@ export default function ChatsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="chats-screen">
+      {!user ? (
+        <GuestGate icon="chatbubbles-outline" message={t("guest_chats")} />
+      ) : (
+      <>
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.onSurface }]}>{t("chats_title")}</Text>
       </View>
@@ -137,6 +145,8 @@ export default function ChatsScreen() {
           </Swipeable>
         ))}
       </KeyboardAwareScrollView>
+      </>
+      )}
     </View>
   );
 }

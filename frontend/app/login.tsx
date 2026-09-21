@@ -18,7 +18,7 @@ const BG_URI =
   "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1000&q=80";
 
 export default function Login() {
-  const { user, login, devLogin, loggingIn } = useAuth();
+  const { user, login, devLogin, loggingIn, enterGuest } = useAuth();
   const { lang, setLang, t } = useI18n();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -27,6 +27,11 @@ export default function Login() {
   const allowDev = process.env.EXPO_PUBLIC_ALLOW_DEV_LOGIN === "1";
 
   useEffect(() => { if (user) router.replace("/(tabs)"); }, [user]);
+
+  const continueAsGuest = async () => {
+    await enterGuest();
+    router.replace("/(tabs)");
+  };
 
   const chooseRole = async (role: "user" | "business") => {
     await storage.setItem(PENDING_ROLE_KEY, role);
@@ -75,6 +80,11 @@ export default function Login() {
             <Pressable testID="email-login-button" onPress={() => setNote(t("soon"))} style={[styles.btn, styles.emailBtn]}>
               <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
               <Text style={styles.emailText}>Email OTP</Text>
+            </Pressable>
+
+            <Pressable testID="guest-continue-button" onPress={continueAsGuest} style={[styles.btn, styles.guestBtn]}>
+              <Ionicons name="compass-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.guestText}>{t("guest_continue")}</Text>
             </Pressable>
 
             {allowDev && (
@@ -147,6 +157,8 @@ const styles = StyleSheet.create({
   fbText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
   emailBtn: { backgroundColor: "rgba(255,255,255,0.10)", borderWidth: 1, borderColor: "rgba(255,255,255,0.35)" },
   emailText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
+  guestBtn: { backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
+  guestText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
   demoBtn: { alignItems: "center", paddingVertical: 4 },
   demoText: { color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: "600", textDecorationLine: "underline" },
   bottomBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },

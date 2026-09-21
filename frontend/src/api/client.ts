@@ -37,6 +37,8 @@ export type EventItem = {
   rating_count?: number;
   latitude: number;
   longitude: number;
+  pin_latitude?: number;
+  pin_longitude?: number;
   address: string;
   checkins: number;
   live_count: number;
@@ -85,15 +87,14 @@ export const api = {
   // Crews
   leaveCrew: (id: string) => req(`/crews/${id}/leave`, { method: "POST" }),
 
+  // Public profile + account
+  getUser: (id: string): Promise<any> => req(`/users/${id}`),
+  deleteAccount: () => req(`/profile`, { method: "DELETE" }),
+
   // Chat
   getMessages: (id: string): Promise<any[]> => req(`/events/${id}/messages`),
   sendMessage: (id: string, text: string) =>
     req(`/events/${id}/messages`, { method: "POST", body: JSON.stringify({ text }) }),
-
-  // Stories
-  getStories: (id: string): Promise<any[]> => req(`/events/${id}/stories`),
-  addStory: (id: string, image: string) =>
-    req(`/events/${id}/stories`, { method: "POST", body: JSON.stringify({ image }) }),
 
   // Crews
   createCrew: (name: string) => req(`/crews`, { method: "POST", body: JSON.stringify({ name }) }),

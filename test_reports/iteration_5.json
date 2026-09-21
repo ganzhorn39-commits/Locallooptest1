@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 5 (LocalLoop Guest Mode / Interactivity Wall review, frontend-only). All 5 specified flows PASS on mobile viewport (390x844) via web preview. GUEST ENTRY: On /login, tapping guest-continue-button routes to /(tabs) and map-home renders (13 map-pin-<id> markers, filter chips, Explore/tab bar all visible). INTERACTIVITY WALL ON MAP: As a guest, tapping map-pin-<id> opens event-sheet. Tapping checkin-button, save-event-button, and open-chat-button each opens the global LoginWall (login-wall-login + login-wall-backdrop visible) instead of firing the action — verified for all 3 buttons. GUEST GATE ON TABS: /(tabs)/create, /(tabs)/profile, /(tabs)/chats all render guest-gate for guests; tapping guest-gate-login opens the LoginWall. LOGIN-WALL DISMISS: Both login-wall-later ('Not now') and login-wall-backdrop close the wall and keep the user on the current screen (guest state preserved). REGRESSION (authed): After tapping demo-login-button, user lands on /(tabs) (map-home visible, onboarding-screen NOT shown). Opening an event pin renders event-sheet; tapping checkin-button as authed does NOT open the LoginWall (expected). Create, Profile, and Chats tabs render real content — guest-gate NOT visible on any of them. NOTE ON RSVP: For the authed regression [C5], the RSVP privacy modal (rsvp-public) did not appear because the demo user was ALREADY checked in from a prior test iteration — the checkin-button then toggles check-out via onCheckin() without opening the modal (per EventSheet.tsx L200: 'if (checkedIn) { onCheckin(); return; }'). This is expected behavior, not a bug; the critical assertion — that the wall does NOT show for authed users — passed. Console warnings unchanged from iter4 (shadow*, pointerEvents, useNativeDriver, expo-notifications on web) — non-blocking on web preview. No new deprecated packages detected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "Global StyleSheet", "issue": "Console warning: 'shadow*' style props deprecated. Use 'boxShadow'. Non-blocking, carried over from iter4."},
+      {"component": "TimeWheel / RN Web", "issue": "Console warning: props.pointerEvents deprecated. Use style.pointerEvents. Carried over from iter4."},
+      {"component": "expo-notifications on web", "issue": "Warning: 'Listening to push token changes is not yet fully supported on web.' Expected for preview."},
+      {"component": "Animated / useNativeDriver", "issue": "Warning: useNativeDriver not supported on web. Expected."}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AuthContext.tsx correctly exposes guest state + promptLogin() and renders LoginWall (Modal) globally so it works from any screen (Map/EventSheet/GuestGate).",
+    "EventSheet.tsx correctly gates checkin-button (L197-203), save-event-button via toggleSave (L108-113), and open-chat-button (L249-256) — all call promptLogin() when !user before firing the real action.",
+    "GuestGate.tsx exposes both guest-gate and guest-gate-login testIDs, and guest-gate-login correctly wires to promptLogin() from useAuth().",
+    "app/(tabs)/create.tsx, profile.tsx, and screens/ChatsScreen.tsx correctly render GuestGate when !user; ChatsScreen wraps its content in a guard branch (L86-149) so no authed API calls (myAttending/myCrews) fire for guests.",
+    "AuthGate in app/_layout.tsx correctly allows guests on tabs (redirect condition: '!user && !guest && !inAuth' — so guest bypass the /login redirect).",
+    "LoginWall dismiss on backdrop press works because the outer Pressable has onPress=onClose while the inner card Pressable has no onPress (RN swallow-tap pattern) — verified in test.",
+    "Guest key persistence: enterGuest() writes localloop_guest=true to storage; bootstrap() reads it on cold-start and sets setGuest(true) — this matches the review-request note that guest mode may persist between runs.",
+    "Expected 401s on /api/participants and /api/save-status when a guest opens an event sheet (loadSocial is called) — observed 2x 401 in console during guest flow, which is expected per review-request instructions ('do NOT treat expected 401s for guest-protected endpoints as bugs')."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (5/5 spec flows pass)"},
+  "seed_data_creation": "None. Demo user remained in its post-iter4 state (account_type=business, verified=true, onboarded=true, business_name=TEST_BIZ_UI, and already checked-in on the first Karlsruhe event 269817c4).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Guest Mode / Interactivity Wall verified end-to-end. Stable testIDs for this feature: guest-continue-button, demo-login-button, login-wall-login, login-wall-later, login-wall-backdrop, guest-gate, guest-gate-login, event-sheet, checkin-button, save-event-button, open-chat-button, map-home, map-pin-<id>, login-screen. IMPORTANT for future testing: RN-web Pressables MUST be triggered via `page.evaluate(document.querySelector('[data-testid=...]').click())` — Playwright's .click(force=True) does NOT dispatch React's onPress on Pressable/TouchableOpacity in RN Web. Guest mode persists in localStorage under key 'localloop_guest'; call window.localStorage.clear() + reload to reset. Demo user is currently already checked-in on the first Karlsruhe event, so re-testing the full RSVP privacy modal flow on that event requires either: (a) tapping checkin-button once to check out first, or (b) tapping a different pin (12 other seeded events). POST /api/auth/dev-session returned 403 to a raw urllib request during this test (likely CORS/origin check); the in-app demo-login-button worked fine.",
+  "rca_of_issue": "N/A — no bugs found. The one observation worth flagging (RSVP modal not shown for authed check-in in [C5]) is expected because the demo user was already checked in from prior test iterations, per EventSheet.tsx L200 short-circuit."
+}

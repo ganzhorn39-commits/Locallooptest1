@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Pressable } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, Pressable, ScrollView } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BottomSheet from "@gorhom/bottom-sheet";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -9,6 +10,7 @@ import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { api, EventItem } from "@/src/api/client";
 import { filterEvents, QuickKey } from "@/src/utils/filters";
+import { categoryMeta } from "@/src/constants/categories";
 import { isMinor } from "@/src/utils/age";
 import { useUserLocation } from "@/src/utils/useUserLocation";
 import EventCard from "@/src/components/EventCard";
@@ -83,6 +85,35 @@ export default function ExploreScreen() {
 
   const toggleQuick = (k: QuickKey) => setQuick((q) => (q.includes(k) ? q.filter((x) => x !== k) : [...q, k]));
 
+  const trending = useMemo(
+    () => [...events].sort((a, b) => (b.live_count || 0) - (a.live_count || 0)).slice(0, 6),
+    [events]
+  );
+  const showTrends = !query && category === "all" && radiusKm === null;
+
+  const TrendsHeader = showTrends && trending.length > 0 ? (
+    <View style={styles.trendsWrap} testID="trends-section">
+      <View style={styles.trendsHead}>
+        <Ionicons name="flame" size={18} color={colors.error} />
+        <Text style={[styles.trendsTitle, { color: colors.onSurface }]}>{t("trending_now")}</Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        {trending.map((e) => {
+          const meta = categoryMeta(e.category);
+          return (
+            <Pressable key={e.id} testID={`trend-${e.id}`} onPress={() => openEvent(e)} style={[styles.trendCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <View style={[styles.trendImg, { backgroundColor: meta.color }]}>
+                {e.image_url ? <Image source={{ uri: e.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Text style={{ fontSize: 26 }}>{meta.emoji}</Text>}
+                <View style={styles.trendLive}><Ionicons name="flame" size={11} color="#FFFFFF" /><Text style={styles.trendLiveText}>{e.live_count}</Text></View>
+              </View>
+              <Text style={[styles.trendName, { color: colors.onSurface }]} numberOfLines={1}>{e.title}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  ) : null;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="explore-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -116,6 +147,7 @@ export default function ExploreScreen() {
             <EventCard event={item} saved={savedIds.includes(item.id)} onPress={() => openEvent(item)} onToggleSave={() => toggleSave(item.id)} />
           )}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 90 }}
+          ListHeaderComponent={TrendsHeader}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.brand} />}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("no_match")}</Text>}
           testID="explore-list"
@@ -137,5 +169,13 @@ const styles = StyleSheet.create({
   radiusRow: { flexDirection: "row" },
   radiusPill: { flexDirection: "row", alignItems: "center", gap: 6, height: 32, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1 },
   radiusPillText: { fontSize: 13, fontWeight: "800" },
+  trendsWrap: { marginBottom: 18 },
+  trendsHead: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  trendsTitle: { fontSize: 17, fontWeight: "800" },
+  trendCard: { width: 140 },
+  trendImg: { width: 140, height: 90, borderRadius: 14, overflow: "hidden", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(0,0,0,0.05)" },
+  trendLive: { position: "absolute", top: 6, right: 6, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 },
+  trendLiveText: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
+  trendName: { fontSize: 13, fontWeight: "700", marginTop: 6 },
   empty: { textAlign: "center", marginTop: 50, fontSize: 15, fontStyle: "italic" },
 });

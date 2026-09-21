@@ -13,7 +13,7 @@ export default function Chat() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, promptLogin } = useAuth();
   const { t } = useI18n();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
 
@@ -44,6 +44,7 @@ export default function Chat() {
   }, [eventId, loadMessages]);
 
   const send = async () => {
+    if (!user) { promptLogin(); return; }
     const t = text.trim();
     if (!t) return;
     setText("");
@@ -71,10 +72,10 @@ export default function Chat() {
         <Pressable testID="chat-back" onPress={() => { Keyboard.dismiss(); router.back(); }} hitSlop={12} style={{ width: 26 }}>
           <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
         </Pressable>
-        <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]} numberOfLines={1}>{title}</Text>
+        <Pressable testID="chat-header-title" onPress={() => router.push(`/participants/${eventId}`)} style={{ flex: 1, alignItems: "center" }}>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]} numberOfLines={1}>{title || t("chat_group")}</Text>
           <Text style={[styles.headerSub, { color: colors.onSurfaceTertiary }]}>{participants} {t("attending")}</Text>
-        </View>
+        </Pressable>
         <View style={{ width: 26 }} />
       </View>
 

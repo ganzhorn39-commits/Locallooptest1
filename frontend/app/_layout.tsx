@@ -45,7 +45,7 @@ function ThemedStatusBar() {
 }
 
 function AuthGate() {
-  const { user, loading } = useAuth();
+  const { user, loading, guest } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const [showIntro, setShowIntro] = useState(true);
@@ -78,10 +78,10 @@ function AuthGate() {
     if (loading) return;
     const inAuth = segments[0] === "login";
     const inOnboarding = segments[0] === "onboarding";
-    if (!user && !inAuth) router.replace("/login");
+    if (!user && !guest && !inAuth) router.replace("/login");
     else if (user && !user.onboarded && !inOnboarding) router.replace("/onboarding");
     else if (user && user.onboarded && (inAuth || inOnboarding)) router.replace("/(tabs)");
-  }, [user, loading, segments]);
+  }, [user, loading, guest, segments]);
 
   return (
     <>
@@ -91,6 +91,9 @@ function AuthGate() {
         <Stack.Screen name="login" options={{ animation: "fade" }} />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="verify" options={{ presentation: "modal" }} />
+        <Stack.Screen name="participants/[eventId]" />
+        <Stack.Screen name="user/[id]" />
+        <Stack.Screen name="event/[id]" />
         <Stack.Screen name="chat/[eventId]" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="crew/[id]" />
       </Stack>

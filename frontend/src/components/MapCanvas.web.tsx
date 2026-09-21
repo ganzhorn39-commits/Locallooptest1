@@ -62,7 +62,7 @@ export default function MapCanvas({ events, region, onSelect, radiusKm }: Props)
       {events.map((e) => {
         const meta = categoryMeta(e.category);
         const color = meta.color;
-        const p = pos(e.latitude, e.longitude);
+        const p = pos(e.pin_latitude ?? e.latitude, e.pin_longitude ?? e.longitude);
         return (
           <Pressable
             key={e.id}

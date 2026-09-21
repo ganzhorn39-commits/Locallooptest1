@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { Platform } from "react-native";
+import { Platform, Modal, View, Text, Pressable, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { storage } from "@/src/utils/storage";
 import { api, TOKEN_KEY } from "@/src/api/client";
+import { useTheme } from "@/src/theme/theme";
+import { useI18n } from "@/src/i18n";
 
 type User = {
   user_id: string;
@@ -22,26 +26,33 @@ type User = {
   business_website?: string;
   business_instagram?: string;
 };
-type AuthState = { user: User | null; loading: boolean; loggingIn: boolean };
+type AuthState = { user: User | null; loading: boolean; loggingIn: boolean; guest: boolean };
 
 type Ctx = AuthState & {
   login: () => Promise<void>;
   devLogin: () => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  enterGuest: () => Promise<void>;
+  promptLogin: () => void;
 };
 
 const AuthCtx = createContext<Ctx>({} as Ctx);
 const AUTH_BASE = "https://auth.emergentagent.com";
+const GUEST_KEY = "localloop_guest";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingIn, setLoggingIn] = useState(false);
+  const [guest, setGuest] = useState(false);
+  const [wallVisible, setWallVisible] = useState(false);
 
   const processSessionId = useCallback(async (sessionId: string) => {
     const res = await api.createAuthSession(sessionId);
     await storage.secureSet(TOKEN_KEY, res.session_token);
+    await storage.removeItem(GUEST_KEY);
+    setGuest(false);
     setUser(res.user);
   }, []);
 
@@ -68,6 +79,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch {
           await storage.secureRemove(TOKEN_KEY);
         }
+      } else {
+        const g = await storage.getItem<boolean>(GUEST_KEY, false);
+        if (g) setGuest(true);
       }
     } finally {
       setLoading(false);
@@ -107,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.devSession();
       await storage.secureSet(TOKEN_KEY, res.session_token);
+      await storage.removeItem(GUEST_KEY);
+      setGuest(false);
       setUser(res.user);
     } finally {
       setLoggingIn(false);
@@ -125,14 +141,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await api.logout();
     } catch {}
     await storage.secureRemove(TOKEN_KEY);
+    await storage.removeItem(GUEST_KEY);
+    setGuest(false);
     setUser(null);
   }, []);
 
+  const enterGuest = useCallback(async () => {
+    await storage.setItem(GUEST_KEY, true);
+    setGuest(true);
+  }, []);
+
+  const promptLogin = useCallback(() => setWallVisible(true), []);
+
   return (
-    <AuthCtx.Provider value={{ user, loading, loggingIn, login, devLogin, logout, refresh }}>
+    <AuthCtx.Provider value={{ user, loading, loggingIn, guest, login, devLogin, logout, refresh, enterGuest, promptLogin }}>
       {children}
+      <LoginWall
+        visible={wallVisible}
+        onClose={() => setWallVisible(false)}
+        onLogin={() => { setWallVisible(false); login(); }}
+      />
     </AuthCtx.Provider>
   );
 }
+
+function LoginWall({ visible, onClose, onLogin }: { visible: boolean; onClose: () => void; onLogin: () => void }) {
+  const { colors } = useTheme();
+  const { t } = useI18n();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={wallStyles.bg} onPress={onClose} testID="login-wall-backdrop">
+        <BlurView intensity={Platform.OS === "android" ? 100 : 60} tint="dark" style={wallStyles.card}>
+          <Pressable style={{ gap: 14, alignItems: "center" }}>
+            <View style={[wallStyles.iconWrap, { backgroundColor: colors.brandTertiary }]}>
+              <Ionicons name="lock-closed" size={28} color={colors.brand} />
+            </View>
+            <Text style={wallStyles.title}>{t("wall_title")}</Text>
+            <Text style={wallStyles.body}>{t("wall_body")}</Text>
+            <Pressable testID="login-wall-login" onPress={onLogin} style={[wallStyles.loginBtn, { backgroundColor: colors.brand }]}>
+              <Ionicons name="log-in-outline" size={20} color={colors.onBrand} />
+              <Text style={[wallStyles.loginText, { color: colors.onBrand }]}>{t("wall_login")}</Text>
+            </Pressable>
+            <Pressable testID="login-wall-later" onPress={onClose} hitSlop={8} style={{ paddingVertical: 4 }}>
+              <Text style={wallStyles.later}>{t("wall_later")}</Text>
+            </Pressable>
+          </Pressable>
+        </BlurView>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const wallStyles = StyleSheet.create({
+  bg: { flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "flex-end" },
+  card: { borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 24, paddingBottom: 40, overflow: "hidden", backgroundColor: "rgba(12,14,20,0.7)", borderTopWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  iconWrap: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  title: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", textAlign: "center" },
+  body: { color: "rgba(255,255,255,0.7)", fontSize: 14, textAlign: "center", lineHeight: 20, paddingHorizontal: 8 },
+  loginBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, height: 54, borderRadius: 16, alignSelf: "stretch", marginTop: 6 },
+  loginText: { fontSize: 16, fontWeight: "800" },
+  later: { color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: "600" },
+});
 
 export const useAuth = () => useContext(AuthCtx);

@@ -7,18 +7,20 @@ import { useTheme } from "@/src/theme/theme";
 import { useAuth } from "@/src/auth/AuthContext";
 import { useI18n } from "@/src/i18n";
 import { storage } from "@/src/utils/storage";
+import { api } from "@/src/api/client";
 
 export default function Settings() {
   const { colors, isDark, toggle } = useTheme();
   const { lang, setLang, t } = useI18n();
-  const { logout, user } = useAuth();
-  const insets = useSafeAreaInsets();
+  const { logout, user } = useAuth();  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [notifEvents, setNotifEvents] = useState(true);
   const [notifMessages, setNotifMessages] = useState(true);
   const [locationOn, setLocationOn] = useState(true);
   const [legal, setLegal] = useState<null | "terms" | "privacy">(null);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -112,7 +114,28 @@ export default function Settings() {
           <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
           <Text style={styles.logoutText}>{t("logout")}</Text>
         </Pressable>
+
+        <Pressable testID="delete-account-button" onPress={() => setShowDelete(true)} style={styles.deleteBtn}>
+          <Ionicons name="trash-outline" size={18} color={colors.error} />
+          <Text style={[styles.deleteText, { color: colors.error }]}>{t("delete_account")}</Text>
+        </Pressable>
       </ScrollView>
+
+      <Modal visible={showDelete} transparent animationType="fade" onRequestClose={() => setShowDelete(false)}>
+        <Pressable style={styles.modalBg} onPress={() => setShowDelete(false)} testID="delete-backdrop">
+          <Pressable style={[styles.confirmCard, { backgroundColor: colors.surfaceSecondary }]}>
+            <Ionicons name="warning" size={40} color={colors.error} />
+            <Text style={[styles.confirmTitle, { color: colors.onSurface }]}>{t("delete_account")}</Text>
+            <Text style={[styles.confirmBody, { color: colors.onSurfaceTertiary }]}>{t("delete_confirm")}</Text>
+            <Pressable testID="confirm-delete" disabled={deleting} onPress={async () => { setDeleting(true); try { await api.deleteAccount(); } catch {} await logout(); router.replace("/login"); }} style={[styles.confirmDelete, { backgroundColor: colors.error }]}>
+              <Text style={styles.confirmDeleteText}>{t("delete_account")}</Text>
+            </Pressable>
+            <Pressable testID="cancel-delete" onPress={() => setShowDelete(false)} style={styles.confirmCancel}>
+              <Text style={[styles.confirmCancelText, { color: colors.onSurfaceTertiary }]}>{t("cancel")}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={!!legal} transparent animationType="fade" onRequestClose={() => setLegal(null)}>
         <Pressable style={styles.modalBg} onPress={() => setLegal(null)}>
@@ -160,6 +183,15 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 15, fontWeight: "600" },
   logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 54, borderRadius: 14, marginTop: 8 },
   logoutText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, paddingVertical: 10 },
+  deleteText: { fontSize: 14, fontWeight: "700" },
+  confirmCard: { width: "86%", alignSelf: "center", borderRadius: 20, padding: 24, alignItems: "center", gap: 10 },
+  confirmTitle: { fontSize: 18, fontWeight: "800" },
+  confirmBody: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  confirmDelete: { alignSelf: "stretch", height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center", marginTop: 8 },
+  confirmDeleteText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  confirmCancel: { paddingVertical: 8 },
+  confirmCancelText: { fontSize: 15, fontWeight: "700" },
   modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 28 },
   modalCard: { borderRadius: 16, padding: 20, gap: 12, width: "100%" },
   modalTitle: { fontSize: 18, fontWeight: "800" },

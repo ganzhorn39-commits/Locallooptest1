@@ -226,6 +226,12 @@ def with_live_count(doc: dict) -> dict:
     doc["is_hot"] = doc["live_count"] > 45
     doc["spots_taken"] = base
     doc["capacity"] = doc.get("capacity", 0)
+    # Location fuzzing: public pins are offset ~200-500m ("a few streets away") for privacy.
+    seed = hash(doc["id"])
+    off_lat = (((seed % 1000) / 1000) - 0.5) * 0.008
+    off_lng = ((((seed // 1000) % 1000) / 1000) - 0.5) * 0.008
+    doc["pin_latitude"] = round(doc.get("latitude", 0) + off_lat, 6)
+    doc["pin_longitude"] = round(doc.get("longitude", 0) + off_lng, 6)
     if doc.get("is_recurring") and doc.get("recurrence_days"):
         try:
             st = datetime.fromisoformat(doc["start_time"])
@@ -318,6 +324,31 @@ class ProfileUpdate(BaseModel):
     business_instagram: Optional[str] = None
     identity_verified: Optional[bool] = None
     selfie: Optional[str] = None
+
+
+@api_router.get("/users/{user_id}")
+async def get_public_user(user_id: str):
+    u = await db.users.find_one(
+        {"user_id": user_id},
+        {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "bio": 1, "instagram": 1,
+         "account_type": 1, "verified": 1, "identity_verified": 1, "birthdate": 1, "business_name": 1},
+    )
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    return u
+
+
+@api_router.delete("/profile")
+async def delete_profile(user=Depends(get_current_user)):
+    uid = user["user_id"]
+    await db.checkins.delete_many({"user_id": uid})
+    await db.messages.delete_many({"sender_id": uid})
+    await db.reviews.delete_many({"user_id": uid})
+    await db.crews.update_many({}, {"$pull": {"member_ids": uid}})
+    await db.user_sessions.delete_many({"user_id": uid})
+    await db.users.delete_one({"user_id": uid})
+    return {"ok": True}
+
 
 
 @api_router.patch("/profile")
@@ -448,42 +479,6 @@ async def post_message(event_id: str, payload: MessageCreate, user=Depends(get_c
     except Exception as e:
         logger.warning(f"chat push failed (non-blocking): {e}")
     return msg
-
-
-# ----------------------------- Stories / Moments -----------------------------
-class StoryCreate(BaseModel):
-    image: str  # base64 data URI
-
-
-@api_router.get("/events/{event_id}/stories")
-async def get_stories(event_id: str):
-    now = now_utc()
-    docs = await db.stories.find({"event_id": event_id}, {"_id": 0}).sort("created_at", -1).to_list(200)
-    active = []
-    for d in docs:
-        exp = d.get("expires_at")
-        if isinstance(exp, str):
-            exp = datetime.fromisoformat(exp)
-        if exp and exp.tzinfo is None:
-            exp = exp.replace(tzinfo=timezone.utc)
-        if not exp or exp > now:
-            active.append(d)
-    return active
-
-
-@api_router.post("/events/{event_id}/stories")
-async def post_story(event_id: str, payload: StoryCreate, user=Depends(get_current_user)):
-    await require_attending(event_id, user)
-    story = {
-        "id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["user_id"],
-        "user_name": user.get("name") or "Guest", "user_picture": user.get("picture") or "",
-        "image": payload.image,
-        "created_at": now_utc().isoformat(),
-        "expires_at": now_utc() + timedelta(hours=24),
-    }
-    await db.stories.insert_one(dict(story))
-    story["expires_at"] = story["expires_at"].isoformat()
-    return story
 
 
 # ----------------------------- Crews -----------------------------

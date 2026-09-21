@@ -1,3 +1,14 @@
+# LocalLoop — Etappe 2 · Gastmodus (2026-06)
+Done: #5 Gastmodus "Weiter ohne Anmeldung" auf Welcome (`enterGuest` in AuthContext, persistiert via `localloop_guest`). Gäste sehen Map/Explore/Trends/Kategorien frei. Interaktivitäts-Wall (`promptLogin` + globales `LoginWall`-Bottom-Sheet in AuthContext) bei: Check-in/RSVP, Event speichern, Gruppenchat (EventSheet), Chat senden. `GuestGate`-Screen (src/components/GuestGate.tsx) auf Tabs Create/Profile/Chats. AuthGate lässt Gäste in `/(tabs)`; Login/Logout löschen Gast-Flag. i18n DE/EN Keys: guest_continue, wall_*, guest_chats/create/profile.
+Offen in Etappe 2 (nächster Schritt): Business-Dashboard/Profil-Erweiterungen; danach Chat Community-Guidelines-Modal + Wortfilter. P0 pausiert: Zeitfilter [JETZT]/[HEUTE]/[DIESE WOCHE] auf Map.
+
+
+# LocalLoop — Etappe 1 (Teil 1) (2026-06)
+Done: #9 Moments/Stories entfernt (UI + API + Backend-Endpoints + Model). #2 Kategorien "restaurant" + "cafe" ergänzt; "Trending now"-Sektion auf Explore (Top 6 nach live_count, nur bei Default-Filter). #3 "Konto löschen" in Settings + Sicherheits-Modal + Backend `DELETE /api/profile` (löscht user + checkins/messages/reviews/crew-membership/sessions). #1 Chat-Header tippbar → `app/participants/[eventId]` (Event-Header → `app/event/[id]` Detailscreen; Teilnehmer → `app/user/[id]` Public Profile mit Report/Block). Neue Backend-Endpoints: `GET /api/users/{id}` (public), `DELETE /api/profile`. #7 Location-Fuzzing: `with_live_count` liefert deterministische `pin_latitude`/`pin_longitude` (~200–450m Versatz); MapCanvas (nativ+web) nutzt Pin-Koordinaten, echte Koordinaten bleiben für Radius/At-Venue.
+Offen in Etappe 1 (nächster Schritt): #8 Community-Guidelines-Modal + Wortfilter im Chat (Report/Block ist schon da); #5 Gastmodus "Weiter ohne Anmeldung" + Login-Wall.
+Etappe 2 (Integrationen, später): #4 Bildmoderation (übersprungen/vertagt), #5 E-Mail-Verifizierung via Resend + Blau/Gold-Badge, #6 Business-Dashboard/Angebote/lokale Push.
+
+
 # LocalLoop — Expo SDK Upgrade (2026-06)
 - Upgraded Expo SDK 54 → 57 (`yarn expo install expo@latest` + `--fix`); RN 0.81 → 0.86; expo-doctor 20/20 pass.
 - app.json: removed `newArchEnabled` + android `edgeToEdgeEnabled` (54→55 change).

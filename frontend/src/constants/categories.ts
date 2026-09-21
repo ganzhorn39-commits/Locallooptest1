@@ -8,7 +8,9 @@ export type CategoryKey =
   | "gaming"
   | "outdoor"
   | "workshops"
-  | "music";
+  | "music"
+  | "restaurant"
+  | "cafe";
 
 export type CategoryMeta = {
   key: CategoryKey;
@@ -30,6 +32,8 @@ export const CATEGORIES: CategoryMeta[] = [
   { key: "outdoor", label: "Outdoor & Nature", color: "#34D399", icon: "leaf", emoji: "🪵" },
   { key: "workshops", label: "Workshops", color: "#56CCF2", icon: "book", emoji: "📚" },
   { key: "music", label: "Music & Concerts", color: "#2DD4BF", icon: "musical-notes", emoji: "🎵" },
+  { key: "restaurant", label: "Restaurant", color: "#F59E9E", icon: "restaurant", emoji: "🍽️" },
+  { key: "cafe", label: "Café", color: "#C8A27C", icon: "cafe", emoji: "☕" },
 ];
 
 const FALLBACK: CategoryMeta = CATEGORIES[0];
