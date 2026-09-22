@@ -10,7 +10,7 @@ import { storage } from "@/src/utils/storage";
 import { api } from "@/src/api/client";
 
 export default function Settings() {
-  const { colors, isDark, toggle } = useTheme();
+  const { colors, theme, setTheme } = useTheme();
   const { lang, setLang, t } = useI18n();
   const { logout, user } = useAuth();  const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -74,10 +74,30 @@ export default function Settings() {
         </Section>
 
         {/* Appearance */}
-        <Section title="Theme" colors={colors}>
-          <Row label={isDark ? "Dark mode" : "Light mode"} colors={colors}>
-            <Switch testID="toggle-theme" value={isDark} onValueChange={toggle} trackColor={{ true: colors.brand, false: colors.borderStrong }} />
-          </Row>
+        <Section title={t("appearance")} colors={colors}>
+          {([
+            { key: "standard", label: t("theme_standard"), desc: t("theme_standard_desc"), swatch: ["#0A0B0D", "#159AB8"] },
+            { key: "gold", label: t("theme_gold"), desc: t("theme_gold_desc"), swatch: ["#FFFFFF", "#C9A227"] },
+          ] as const).map((o) => {
+            const active = theme === o.key;
+            return (
+              <Pressable
+                key={o.key}
+                testID={`theme-${o.key}`}
+                onPress={() => setTheme(o.key)}
+                style={[styles.themeRow, { backgroundColor: colors.surfaceSecondary, borderColor: active ? colors.brand : colors.border, borderWidth: active ? 2 : 1 }]}
+              >
+                <View style={[styles.themeSwatch, { backgroundColor: o.swatch[0], borderColor: colors.borderStrong }]}>
+                  <View style={[styles.themeSwatchDot, { backgroundColor: o.swatch[1] }]} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.linkText, { color: colors.onSurface }]}>{o.label}</Text>
+                  <Text style={[styles.themeDesc, { color: colors.onSurfaceTertiary }]}>{o.desc}</Text>
+                </View>
+                <Ionicons name={active ? "checkmark-circle" : "ellipse-outline"} size={22} color={active ? colors.brand : colors.onSurfaceTertiary} />
+              </Pressable>
+            );
+          })}
         </Section>
 
         {/* Verification */}
@@ -181,6 +201,10 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 15, fontWeight: "500" },
   linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, height: 52, borderRadius: 12, borderWidth: 1 },
   linkText: { fontSize: 15, fontWeight: "600" },
+  themeRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
+  themeSwatch: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  themeSwatchDot: { width: 18, height: 18, borderRadius: 9 },
+  themeDesc: { fontSize: 12, marginTop: 2 },
   logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 54, borderRadius: 14, marginTop: 8 },
   logoutText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 14, paddingVertical: 10 },

@@ -64,6 +64,8 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
   const [isRecurring, setIsRecurring] = useState(false);
   const [freq, setFreq] = useState("weekly");
   const [days, setDays] = useState<number[]>([]);
+  const [joinApproval, setJoinApproval] = useState<"auto" | "manual">("auto");
+  const [ageRestricted, setAgeRestricted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -94,6 +96,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
         latitude: coord.latitude, longitude: coord.longitude, address: address.trim(),
         is_recurring: isRecurring && days.length > 0, recurrence_freq: freq,
         recurrence_days: isRecurring ? days : [], recurrence_label: recLabel,
+        join_approval: joinApproval, age_restricted: ageRestricted,
       });
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setTitle(""); setDescription(""); setInstagram(""); setWebsite(""); setTickets(""); setAddress("");
@@ -211,6 +214,35 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
           <TextInput testID="input-capacity" value={capacity} onChangeText={(v) => setCapacity(v.replace(/[^0-9]/g, ""))} placeholder="0 = unlimited" keyboardType="number-pad" placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
         </Field>
 
+        <Field label={t("join_approval_label")} colors={colors}>
+          <View style={styles.catRow}>
+            {([
+              { key: "auto", label: t("approval_auto") },
+              { key: "manual", label: t("approval_manual") },
+            ] as const).map((o) => {
+              const active = joinApproval === o.key;
+              return (
+                <Pressable key={o.key} testID={`approval-${o.key}`} onPress={() => setJoinApproval(o.key)}
+                  style={[styles.catChip, { backgroundColor: active ? colors.brand : colors.surfaceTertiary, borderColor: active ? colors.brand : colors.border }]}>
+                  <Ionicons name={o.key === "auto" ? "flash" : "shield-checkmark"} size={15} color={active ? "#FFFFFF" : colors.onSurface} />
+                  <Text style={[styles.catChipText, { color: active ? "#FFFFFF" : colors.onSurface }]}>{o.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={[styles.hintText, { color: colors.onSurfaceTertiary }]}>{joinApproval === "auto" ? t("approval_auto_desc") : t("approval_manual_desc")}</Text>
+        </Field>
+
+        <Field label={t("age_restrict_label")} colors={colors}>
+          <View style={[styles.recurRow, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.onSurface, fontSize: 14, fontWeight: "600" }}>{t("age_restrict_toggle")}</Text>
+              <Text style={[styles.hintText, { color: colors.onSurfaceTertiary, marginTop: 2 }]}>{t("age_restrict_hint")}</Text>
+            </View>
+            <Switch testID="age-restrict-toggle" value={ageRestricted} onValueChange={setAgeRestricted} trackColor={{ true: colors.brand, false: colors.borderStrong }} />
+          </View>
+        </Field>
+
         {!!error && <Text style={[styles.error, { color: colors.error }]} testID="form-error">{error}</Text>}
       </KeyboardAwareScrollView>
 
@@ -268,6 +300,7 @@ const styles = StyleSheet.create({
   catRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   catChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, height: 40, borderRadius: 999, borderWidth: 1 },
   catChipText: { fontSize: 14, fontWeight: "600" },
+  hintText: { fontSize: 12, marginTop: 6, lineHeight: 16 },
   dateBtn: { flexDirection: "row", alignItems: "center", gap: 10, height: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14 },
   dateText: { fontSize: 15, fontWeight: "600" },
   banner: { height: 130, borderRadius: 12, borderWidth: 1, overflow: "hidden", justifyContent: "flex-end" },

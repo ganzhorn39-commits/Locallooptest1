@@ -51,6 +51,10 @@ export type EventItem = {
   is_recurring?: boolean;
   recurrence_label?: string;
   next_occurrence?: string;
+  join_approval?: "auto" | "manual";
+  age_restricted?: boolean;
+  status?: "active" | "cancelled";
+  cancelled_at?: string | null;
 };
 
 export const api = {
@@ -59,12 +63,18 @@ export const api = {
   getEvent: (id: string): Promise<EventItem> => req(`/events/${id}`),
   createEvent: (payload: any): Promise<EventItem> =>
     req(`/events`, { method: "POST", body: JSON.stringify(payload) }),
-  checkin: (id: string, body?: { visibility?: string; at_venue?: boolean }): Promise<EventItem & { checked_in: boolean }> =>
+  checkin: (id: string, body?: { visibility?: string; at_venue?: boolean }): Promise<EventItem & { checked_in: boolean; pending?: boolean }> =>
     req(`/events/${id}/checkin`, { method: "POST", body: JSON.stringify(body || {}) }),
-  checkinStatus: (id: string): Promise<{ checked_in: boolean }> =>
+  checkinStatus: (id: string): Promise<{ checked_in: boolean; pending?: boolean }> =>
     req(`/events/${id}/checkin-status`),
   participants: (id: string): Promise<{ count: number; participants: any[] }> =>
     req(`/events/${id}/participants`),
+
+  // Host controls
+  eventRequests: (id: string): Promise<{ count: number; requests: any[] }> => req(`/events/${id}/requests`),
+  approveRequest: (id: string, userId: string) => req(`/events/${id}/requests/${userId}/approve`, { method: "POST" }),
+  rejectRequest: (id: string, userId: string) => req(`/events/${id}/requests/${userId}/reject`, { method: "POST" }),
+  cancelEvent: (id: string): Promise<EventItem> => req(`/events/${id}/cancel`, { method: "POST" }),
 
   // Saves
   toggleSave: (id: string): Promise<{ saved: boolean }> => req(`/events/${id}/save`, { method: "POST" }),

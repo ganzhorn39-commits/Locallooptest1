@@ -13,7 +13,9 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Show nearby events on your map",
         "NSCameraUsageDescription": "Take photos to share event moments",
-        "NSPhotoLibraryUsageDescription": "Choose photos for your profile and moments"
+        "NSPhotoLibraryUsageDescription": "Choose photos for your profile and moments",
+        "NSCalendarsUsageDescription": "Save events to your calendar",
+        "NSCalendarsFullAccessUsageDescription": "Save events to your calendar"
       }
     },
     "android": {
@@ -25,7 +27,9 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "CAMERA"
+        "CAMERA",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
       ]
     },
     "web": {

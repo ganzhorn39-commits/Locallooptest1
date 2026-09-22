@@ -71,6 +71,8 @@ class EventCreate(BaseModel):
     recurrence_freq: str = ""  # weekly | biweekly | monthly
     recurrence_days: List[int] = []  # 0=Mon ... 6=Sun
     recurrence_label: str = ""
+    join_approval: str = "auto"  # auto | manual
+    age_restricted: bool = False
 
 
 class Event(BaseModel):
@@ -98,6 +100,10 @@ class Event(BaseModel):
     recurrence_freq: str = ""
     recurrence_days: List[int] = []
     recurrence_label: str = ""
+    join_approval: str = "auto"  # auto | manual
+    age_restricted: bool = False
+    status: str = "active"  # active | cancelled
+    cancelled_at: Optional[str] = None
     checkins: int = 0
     created_by: str = "demo"
     created_at: str = Field(default_factory=lambda: now_utc().isoformat())
@@ -278,11 +284,20 @@ async def checkin(event_id: str, body: CheckinBody = CheckinBody(), user=Depends
     doc = await db.events.find_one({"id": event_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Event not found")
-    already = await db.checkins.find_one({"event_id": event_id, "user_id": user["user_id"]})
+    if doc.get("status") == "cancelled":
+        raise HTTPException(status_code=409, detail="Event cancelled")
+    uid = user["user_id"]
+    is_host = doc.get("created_by") == uid
+    already = await db.checkins.find_one({"event_id": event_id, "user_id": uid})
+    pending_req = await db.join_requests.find_one({"event_id": event_id, "user_id": uid, "status": "pending"})
+    checked_in = False
+    is_pending = False
     if already:
-        await db.checkins.delete_one({"event_id": event_id, "user_id": user["user_id"]})
+        await db.checkins.delete_one({"event_id": event_id, "user_id": uid})
         await db.events.update_one({"id": event_id}, {"$inc": {"checkins": -1}})
-        checked_in = False
+    elif pending_req:
+        # toggle off a pending request
+        await db.join_requests.delete_one({"event_id": event_id, "user_id": uid})
     else:
         capacity = int(doc.get("capacity", 0) or 0)
         if capacity > 0:
@@ -290,22 +305,136 @@ async def checkin(event_id: str, body: CheckinBody = CheckinBody(), user=Depends
             if current >= capacity:
                 raise HTTPException(status_code=409, detail="Event is full")
         vis = body.visibility if body.visibility in ("public", "friends", "anonymous") else "public"
-        await db.checkins.insert_one({
-            "event_id": event_id, "user_id": user["user_id"], "at": now_utc().isoformat(),
-            "visibility": vis, "at_venue": bool(body.at_venue),
-        })
-        await db.events.update_one({"id": event_id}, {"$inc": {"checkins": 1}})
-        checked_in = True
+        if doc.get("join_approval") == "manual" and not is_host:
+            await db.join_requests.update_one(
+                {"event_id": event_id, "user_id": uid},
+                {"$set": {"event_id": event_id, "user_id": uid, "status": "pending",
+                          "visibility": vis, "at_venue": bool(body.at_venue), "at": now_utc().isoformat()}},
+                upsert=True,
+            )
+            is_pending = True
+            try:
+                await send_push(
+                    recipients=[doc.get("created_by")],
+                    data={"title": "New join request 🙋", "message": f"{user.get('name') or 'Someone'} wants to join \"{doc['title']}\"", "action_url": f"/requests/{event_id}"},
+                )
+            except Exception as e:
+                logger.warning(f"request push failed (non-blocking): {e}")
+        else:
+            await db.checkins.insert_one({
+                "event_id": event_id, "user_id": uid, "at": now_utc().isoformat(),
+                "visibility": vis, "at_venue": bool(body.at_venue),
+            })
+            await db.events.update_one({"id": event_id}, {"$inc": {"checkins": 1}})
+            checked_in = True
     updated = await db.events.find_one({"id": event_id}, {"_id": 0})
     result = with_live_count(updated)
     result["checked_in"] = checked_in
+    result["pending"] = is_pending
     return result
 
 
 @api_router.get("/events/{event_id}/checkin-status")
 async def checkin_status(event_id: str, user=Depends(get_current_user)):
-    already = await db.checkins.find_one({"event_id": event_id, "user_id": user["user_id"]})
-    return {"checked_in": bool(already)}
+    uid = user["user_id"]
+    already = await db.checkins.find_one({"event_id": event_id, "user_id": uid})
+    pending_req = await db.join_requests.find_one({"event_id": event_id, "user_id": uid, "status": "pending"})
+    return {"checked_in": bool(already), "pending": bool(pending_req)}
+
+
+# ----------------------------- Host controls: join requests + cancellation -----------------------------
+async def require_host(event_id: str, user: dict):
+    ev = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if ev.get("created_by") != user["user_id"]:
+        raise HTTPException(status_code=403, detail="Only the host can do this")
+    return ev
+
+
+@api_router.get("/events/{event_id}/requests")
+async def list_requests(event_id: str, user=Depends(get_current_user)):
+    await require_host(event_id, user)
+    docs = await db.join_requests.find({"event_id": event_id, "status": "pending"}).to_list(200)
+    out = []
+    for d in docs:
+        u = await db.users.find_one(
+            {"user_id": d["user_id"]},
+            {"_id": 0, "user_id": 1, "name": 1, "picture": 1, "birthdate": 1, "identity_verified": 1},
+        )
+        if u:
+            u["requested_at"] = d.get("at")
+            out.append(u)
+    return {"count": len(out), "requests": out}
+
+
+@api_router.post("/events/{event_id}/requests/{req_user_id}/approve")
+async def approve_request(event_id: str, req_user_id: str, user=Depends(get_current_user)):
+    ev = await require_host(event_id, user)
+    reqd = await db.join_requests.find_one({"event_id": event_id, "user_id": req_user_id, "status": "pending"})
+    if not reqd:
+        raise HTTPException(status_code=404, detail="Request not found")
+    existing = await db.checkins.find_one({"event_id": event_id, "user_id": req_user_id})
+    if not existing:
+        await db.checkins.insert_one({
+            "event_id": event_id, "user_id": req_user_id, "at": now_utc().isoformat(),
+            "visibility": reqd.get("visibility", "public"), "at_venue": bool(reqd.get("at_venue")),
+        })
+        await db.events.update_one({"id": event_id}, {"$inc": {"checkins": 1}})
+    await db.join_requests.delete_one({"event_id": event_id, "user_id": req_user_id})
+    try:
+        await send_push(
+            recipients=[req_user_id],
+            data={"title": "Request approved ✅", "message": f"You're in for \"{ev['title']}\"", "action_url": f"/chat/{event_id}"},
+        )
+    except Exception as e:
+        logger.warning(f"approve push failed (non-blocking): {e}")
+    return {"ok": True}
+
+
+@api_router.post("/events/{event_id}/requests/{req_user_id}/reject")
+async def reject_request(event_id: str, req_user_id: str, user=Depends(get_current_user)):
+    ev = await require_host(event_id, user)
+    await db.join_requests.delete_one({"event_id": event_id, "user_id": req_user_id})
+    try:
+        await send_push(
+            recipients=[req_user_id],
+            data={"title": "Request update", "message": f"Your request for \"{ev['title']}\" was declined", "action_url": "/(tabs)/explore"},
+        )
+    except Exception as e:
+        logger.warning(f"reject push failed (non-blocking): {e}")
+    return {"ok": True}
+
+
+@api_router.post("/events/{event_id}/cancel")
+async def cancel_event(event_id: str, user=Depends(get_current_user)):
+    ev = await require_host(event_id, user)
+    if ev.get("status") == "cancelled":
+        return with_live_count(await db.events.find_one({"id": event_id}, {"_id": 0}))
+    await db.events.update_one({"id": event_id}, {"$set": {"status": "cancelled", "cancelled_at": now_utc().isoformat()}})
+    try:
+        await db.messages.insert_one({
+            "id": str(uuid.uuid4()), "event_id": event_id, "user_id": "system",
+            "user_name": "LocalLoop", "user_picture": "", "system": True,
+            "text": "\u26a0\ufe0f This event has been cancelled by the host.",
+            "created_at": now_utc().isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"cancel system msg failed (non-blocking): {e}")
+    try:
+        att = await db.checkins.find({"event_id": event_id}).to_list(500)
+        reqs = await db.join_requests.find({"event_id": event_id, "status": "pending"}).to_list(500)
+        recipients = list({*(a["user_id"] for a in att), *(r["user_id"] for r in reqs)})
+        if recipients:
+            await send_push(
+                recipients=recipients,
+                data={"title": "Event cancelled \u274c", "message": f"\"{ev['title']}\" has been cancelled by the host.", "action_url": f"/event/{event_id}"},
+                idempotency_key=f"cancel_{event_id}",
+            )
+    except Exception as e:
+        logger.warning(f"cancel push failed (non-blocking): {e}")
+    updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    return with_live_count(updated)
 
 
 # ----------------------------- Profile -----------------------------
