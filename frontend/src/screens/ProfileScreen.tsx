@@ -44,6 +44,9 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
     } catch {} finally { setSaving(false); }
   };
 
+  const userAge = getAge((user as any)?.birthdate);
+  const isBiz = (user as any)?.account_type === "business";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]} testID="profile-screen">
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
@@ -64,15 +67,13 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
           </Pressable>
           <Text style={[styles.email, { color: colors.onSurfaceTertiary }]}>{user?.email}</Text>
           {(() => {
-            const age = getAge((user as any)?.birthdate);
-            const isBiz = (user as any)?.account_type === "business";
             const verified = (user as any)?.verified;
             const idVerified = (user as any)?.identity_verified;
             const displayName = isBiz ? ((user as any)?.business_name || user?.name) : user?.name;
             return (
               <View style={styles.identityRow}>
                 <Text style={[styles.identityName, { color: colors.onSurface }]}>
-                  {displayName}{!isBiz && age !== null ? `, ${age}` : ""}
+                  {displayName}{!isBiz && userAge !== null ? `, ${userAge}` : ""}
                 </Text>
                 {isBiz && verified && (
                   <View testID="verified-badge" style={styles.verifiedWrap}>
@@ -93,6 +94,19 @@ export default function ProfileScreen({ showBack }: { showBack?: boolean }) {
 
         <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("display_name")}</Text>
         <TextInput testID="input-name" value={name} onChangeText={setName} placeholder={t("display_name")} placeholderTextColor={colors.onSurfaceTertiary} style={inputStyle} />
+
+        {!isBiz && userAge !== null && (
+          <View testID="age-locked-field">
+            <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("onb_age_locked")}</Text>
+            <View style={[styles.lockedField, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
+              <Text style={[styles.lockedValue, { color: colors.onSurface }]}>{userAge} {t("years_old")}</Text>
+              <View style={styles.lockIconWrap}>
+                <Ionicons name="lock-closed" size={16} color={colors.onSurfaceTertiary} />
+                <Text style={[styles.lockHint, { color: colors.onSurfaceTertiary }]}>{t("onb_age_locked_hint")}</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         <Text style={[styles.label, { color: colors.onSurfaceTertiary }]}>{t("bio")}</Text>
         <TextInput testID="input-bio" value={bio} onChangeText={setBio} placeholder={t("bio")} placeholderTextColor={colors.onSurfaceTertiary} multiline style={[inputStyle, { height: 90, textAlignVertical: "top", paddingTop: 12 }]} />
@@ -124,6 +138,10 @@ const styles = StyleSheet.create({
   verifiedText: { fontSize: 12, fontWeight: "700" },
   label: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 6 },
   input: { minHeight: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
+  lockedField: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
+  lockedValue: { fontSize: 15, fontWeight: "700" },
+  lockIconWrap: { flexDirection: "row", alignItems: "center", gap: 6 },
+  lockHint: { fontSize: 11, fontWeight: "500" },
   save: { height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 16 },
   saveText: { color: "#FFFFFF", fontSize: 17, fontWeight: "800" },
   logout: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 12, borderWidth: 1, marginTop: 8 },

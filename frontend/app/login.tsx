@@ -106,26 +106,31 @@ export default function Login() {
       </View>
 
       {/* Account type chooser */}
-      <Modal visible={showAccountType} transparent animationType="fade" onRequestClose={() => setShowAccountType(false)}>
+      <Modal visible={showAccountType} transparent animationType="slide" onRequestClose={() => setShowAccountType(false)}>
         <Pressable style={styles.atBg} onPress={() => setShowAccountType(false)} testID="account-type-backdrop">
           <BlurView intensity={Platform.OS === "android" ? 100 : 60} tint="dark" style={styles.atCard}>
             <Pressable>
+              <View style={styles.atHandle} />
               <Text style={styles.atTitle}>{t("choose_account")}</Text>
               <Pressable testID="account-personal" onPress={() => chooseRole("user")} style={styles.atOption}>
-                <View style={[styles.atIcon, { backgroundColor: "#159AB8" }]}><Ionicons name="person" size={22} color="#FFFFFF" /></View>
+                <View style={[styles.atIcon, { backgroundColor: "#159AB8" }]}>
+                  <Ionicons name="person" size={32} color="#FFFFFF" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.atLabel}>{t("acct_personal")}</Text>
                   <Text style={styles.atDesc}>{t("acct_personal_desc")}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+                <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.5)" />
               </Pressable>
               <Pressable testID="account-business" onPress={() => chooseRole("business")} style={styles.atOption}>
-                <View style={[styles.atIcon, { backgroundColor: "#2EE6A6" }]}><Ionicons name="briefcase" size={22} color="#04160F" /></View>
+                <View style={[styles.atIcon, { backgroundColor: "#2EE6A6" }]}>
+                  <Ionicons name="briefcase" size={32} color="#04160F" />
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.atLabel}>{t("acct_business")}</Text>
                   <Text style={styles.atDesc}>{t("acct_business_desc")}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.5)" />
+                <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.5)" />
               </Pressable>
             </Pressable>
           </BlurView>
@@ -164,10 +169,11 @@ const styles = StyleSheet.create({
   bottomBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   barLink: { color: "rgba(255,255,255,0.75)", fontSize: 12, fontWeight: "700" },
   atBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  atCard: { borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 40, gap: 14, overflow: "hidden", backgroundColor: "rgba(12,14,20,0.6)", borderTopWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
-  atTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", marginBottom: 6 },
-  atOption: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", backgroundColor: "rgba(255,255,255,0.06)", marginBottom: 10 },
-  atIcon: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  atLabel: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
-  atDesc: { color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 },
+  atCard: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: 44, gap: 16, overflow: "hidden", backgroundColor: "rgba(12,14,20,0.7)", borderTopWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  atHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.25)", alignSelf: "center", marginBottom: 4 },
+  atTitle: { color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 4 },
+  atOption: { flexDirection: "row", alignItems: "center", gap: 16, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", backgroundColor: "rgba(255,255,255,0.06)", marginBottom: 12 },
+  atIcon: { width: 60, height: 60, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  atLabel: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
+  atDesc: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 3 },
 });

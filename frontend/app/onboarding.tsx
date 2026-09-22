@@ -42,6 +42,7 @@ export default function Onboarding() {
   const [bizInstagram, setBizInstagram] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [legalConfirmed, setLegalConfirmed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -62,6 +63,7 @@ export default function Onboarding() {
 
   const finish = async () => {
     setError("");
+    if (!legalConfirmed) return setError(t("onb_legal_confirm"));
     if (role === "user") {
       if (!name.trim()) return setError(t("onb_name_error"));
       const age = getAge(birthdate);
@@ -162,7 +164,23 @@ export default function Onboarding() {
 
         {!!error && <Text style={{ color: colors.error, fontWeight: "600" }} testID="onb-error">{error}</Text>}
 
-        <Pressable testID="onb-finish" onPress={finish} disabled={saving} style={[styles.finish, { backgroundColor: colors.brand, opacity: saving ? 0.7 : 1 }]}>
+        <Pressable
+          testID="onb-legal-checkbox"
+          onPress={() => setLegalConfirmed((v) => !v)}
+          style={styles.legalRow}
+        >
+          <View style={[styles.checkbox, { borderColor: legalConfirmed ? colors.brand : colors.borderStrong, backgroundColor: legalConfirmed ? colors.brand : "transparent" }]}>
+            {legalConfirmed && <Ionicons name="checkmark" size={18} color={colors.onBrand} />}
+          </View>
+          <Text style={[styles.legalText, { color: colors.onSurfaceSecondary }]}>{t("onb_legal_confirm")}</Text>
+        </Pressable>
+
+        <Pressable
+          testID="onb-finish"
+          onPress={finish}
+          disabled={saving || !legalConfirmed}
+          style={[styles.finish, { backgroundColor: colors.brand, opacity: saving || !legalConfirmed ? 0.5 : 1 }]}
+        >
           {saving ? <ActivityIndicator color={colors.onBrand} /> : <Text style={[styles.finishText, { color: colors.onBrand }]}>{t("onb_finish")}</Text>}
         </Pressable>
       </KeyboardAwareScrollView>
@@ -216,4 +234,7 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 15, fontWeight: "600" },
   finish: { height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
   finishText: { color: "#FFFFFF", fontSize: 17, fontWeight: "800" },
+  legalRow: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 8 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  legalText: { fontSize: 14, fontWeight: "600", flex: 1, lineHeight: 20 },
 });
