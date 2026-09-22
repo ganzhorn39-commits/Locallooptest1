@@ -35,7 +35,7 @@ export function filterEvents(
       if (day < opts.dateStart || day > end) return false;
     }
     if (q) {
-      const hay = `${e.title} ${e.category} ${e.address} ${e.description}`.toLowerCase();
+      const hay = `${e.title} ${e.category} ${e.address} ${e.description} ${e.venue_name || ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (quick.includes("today")) {

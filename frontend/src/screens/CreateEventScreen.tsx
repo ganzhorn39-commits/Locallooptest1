@@ -247,7 +247,7 @@ export default function CreateEventScreen({ onDone, showClose }: { onDone: () =>
       </KeyboardAwareScrollView>
 
       <KeyboardStickyView>
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 28, borderTopColor: colors.border, backgroundColor: colors.surface }]}>
           <Pressable testID="submit-event" onPress={submit} disabled={submitting} style={[styles.submit, { backgroundColor: colors.brand, opacity: submitting ? 0.7 : 1 }]}>
             {submitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{t("publish")}</Text>}
           </Pressable>

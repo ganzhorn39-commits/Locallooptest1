@@ -56,10 +56,13 @@ export default function ExploreScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const filtered = useMemo(
-    () => filterEvents(events, { query, category, quick, userLoc, radiusKm, hideRestricted: isMinor(user?.birthdate) }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()),
-    [events, query, category, quick, userLoc, radiusKm, user]
-  );
+  const filtered = useMemo(() => {
+    if (category === "trending") {
+      const base = filterEvents(events, { query, category: "all", quick, userLoc, radiusKm, hideRestricted: isMinor(user?.birthdate) });
+      return base.sort((a, b) => (b.live_count || 0) - (a.live_count || 0));
+    }
+    return filterEvents(events, { query, category, quick, userLoc, radiusKm, hideRestricted: isMinor(user?.birthdate) }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  }, [events, query, category, quick, userLoc, radiusKm, user]);
 
   const openEvent = useCallback(async (e: EventItem) => {
     setSelected(e);
@@ -89,7 +92,11 @@ export default function ExploreScreen() {
     () => [...events].sort((a, b) => (b.live_count || 0) - (a.live_count || 0)).slice(0, 6),
     [events]
   );
-  const showTrends = !query && category === "all" && radiusKm === null;
+  const trendingAll = useMemo(
+    () => [...events].sort((a, b) => (b.live_count || 0) - (a.live_count || 0)),
+    [events]
+  );
+  const showTrends = !query && category === "all" && radiusKm === null && trending.length > 0;
 
   const TrendsHeader = showTrends && trending.length > 0 ? (
     <View style={styles.trendsWrap} testID="trends-section">
@@ -146,7 +153,7 @@ export default function ExploreScreen() {
           renderItem={({ item }) => (
             <EventCard event={item} saved={savedIds.includes(item.id)} onPress={() => openEvent(item)} onToggleSave={() => toggleSave(item.id)} />
           )}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 90 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 110 }}
           ListHeaderComponent={TrendsHeader}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.brand} />}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.onSurfaceTertiary }]}>{t("no_match")}</Text>}

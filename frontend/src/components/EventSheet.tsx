@@ -117,7 +117,7 @@ export default function EventSheet({ event, checkedIn, onCheckin, bottomInset, u
   const instaUrl = event.instagram ? `https://instagram.com/${event.instagram.replace(/^@/, "")}` : "";
 
   return (
-    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset + 24 }} testID="event-sheet">
+    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset + 48 }} testID="event-sheet">
       <View style={styles.hero}>
         {event.image_url ? (
           <Image source={{ uri: event.image_url }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />

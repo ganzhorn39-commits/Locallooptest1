@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Pressable, TextInput, FlatList, Platform, Keyboard } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import Ionicons from "@react-native-vector-icons/ionicons";
@@ -57,10 +58,23 @@ export default function Chat() {
   const renderItem = ({ item }: { item: any }) => {
     const mine = item.user_id === user?.user_id;
     return (
-      <View style={[styles.msgWrap, { alignItems: mine ? "flex-end" : "flex-start" }]}>
-        {!mine && <Text style={[styles.msgAuthor, { color: colors.onSurfaceTertiary }]}>{item.user_name}</Text>}
-        <View style={[styles.bubble, { backgroundColor: mine ? colors.brand : colors.surfaceSecondary, borderColor: colors.border, borderWidth: mine ? 0 : 1 }]}>
-          <Text style={[styles.msgText, { color: mine ? "#FFFFFF" : colors.onSurface }]}>{item.text}</Text>
+      <View style={[styles.msgRow, { flexDirection: mine ? "row-reverse" : "row" }]}>
+        {!mine && (
+          <Pressable testID={`chat-avatar-${item.user_id}`} onPress={() => router.push(`/user/${item.user_id}`)}>
+            <View style={[styles.avatar, { backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}>
+              {item.user_picture ? <Image source={{ uri: item.user_picture }} style={styles.avatarImg} contentFit="cover" /> : <Text style={[styles.avatarInitial, { color: colors.onSurface }]}>{(item.user_name || "?").charAt(0).toUpperCase()}</Text>}
+            </View>
+          </Pressable>
+        )}
+        <View style={styles.msgWrap}>
+          {!mine && (
+            <Pressable testID={`chat-user-${item.user_id}`} onPress={() => router.push(`/user/${item.user_id}`)} hitSlop={6}>
+              <Text style={[styles.msgAuthor, { color: colors.onSurfaceTertiary }]}>{item.user_name}</Text>
+            </Pressable>
+          )}
+          <View style={[styles.bubble, { backgroundColor: mine ? colors.brand : colors.surfaceSecondary, borderColor: colors.border, borderWidth: mine ? 0 : 1 }]}>
+            <Text style={[styles.msgText, { color: mine ? "#FFFFFF" : colors.onSurface }]}>{item.text}</Text>
+          </View>
         </View>
       </View>
     );
@@ -121,9 +135,13 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 12, marginTop: 1 },
   list: { padding: 16, gap: 10, flexGrow: 1 },
   empty: { textAlign: "center", marginTop: 40, fontSize: 14, fontStyle: "italic" },
-  msgWrap: { width: "100%" },
+  msgRow: { gap: 8, alignItems: "flex-end" },
+  msgWrap: { flex: 1 },
   msgAuthor: { fontSize: 11, marginBottom: 3, marginLeft: 6, fontWeight: "600" },
   bubble: { maxWidth: "80%", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18 },
+  avatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 1.5, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarImg: { width: "100%", height: "100%" },
+  avatarInitial: { fontSize: 14, fontWeight: "800" },
   msgText: { fontSize: 15, lineHeight: 20 },
   composer: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1 },
   input: { flex: 1, height: 48, borderRadius: 24, borderWidth: 1, paddingHorizontal: 16, fontSize: 15 },

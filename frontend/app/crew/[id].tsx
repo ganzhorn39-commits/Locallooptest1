@@ -99,12 +99,12 @@ export default function CrewDetail() {
         <Text style={[styles.section, { color: colors.onSurfaceTertiary }]}>{crew.members.length} {crew.members.length !== 1 ? t("member_other") : t("member_one")}</Text>
         <View style={styles.membersRow}>
           {crew.members.map((m: any) => (
-            <View key={m.user_id} style={styles.member}>
+            <Pressable key={m.user_id} style={styles.member} onPress={() => router.push(`/user/${m.user_id}`)}>
               <View style={[styles.memberAvatar, { backgroundColor: colors.surfaceTertiary }]}>
                 <Ionicons name="person" size={18} color={colors.onSurfaceTertiary} />
               </View>
               <Text style={[styles.memberName, { color: colors.onSurfaceSecondary }]} numberOfLines={1}>{m.name || t("guest")}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
 
